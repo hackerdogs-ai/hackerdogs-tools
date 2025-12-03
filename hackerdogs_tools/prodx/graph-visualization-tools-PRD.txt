@@ -1,0 +1,6 @@
+@prodx in the prodx folder, create a new module called graph_visualizers.py that includes the following langchain tools:
+1. a tool that takes any text, does a NER (use the best free NER tool) and returns a relationship graph in DOT format
+2. a tool that takes any text, does a NER (use the best free NER tool) and returns a relationship graph in JSON format
+3. a tool that takes any text, does a NER (use the best free NER tool) and returns a relationship graph in CSV format
+4. a tool that takes any text, does a NER (use the best free NER tool) and returns a relationship in https://js.cytoscape.org/ embedded within html already
+5. a tool that takes any text, does a NER (use the best free NER tool) and returns a relationship in https://js.cytoscape.org/ only the cytoscape json format ( https://js.cytoscape.org/#notation/graph-model  )
