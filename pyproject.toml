@@ -72,6 +72,7 @@ dependencies = [
     "jsonpointer>=3.0.0",
     "langchain>=1.1.0",
     "langchain-core>=1.1.0",
+    "docker>=6.0.0",  # For Docker client (optional, only if using Docker execution)
     "langdetect>=1.0.9",
     "langgraph>=1.0.4",
     "langgraph-checkpoint>=3.0.1",
@@ -167,8 +168,40 @@ ti = [
     "pycti",
     "pymisp",
 ]
+osint = [
+    # Identity tools (already Python packages)
+    "sherlock-project",
+    "maigret",
+    "ghunt",
+    "holehe",
+    # Infrastructure tools (Python alternatives)
+    "sublist3r",
+    "dnsrecon",
+    "dnspython",
+    "python-nmap",
+    "theHarvester",
+    # Content tools
+    "scrapy",
+    "waybackpy",
+    "internetarchive",
+    "requests[socks]",
+    "pysocks",
+    "stem",
+    # Metadata tools
+    "exifread",
+    "piexif",
+    "yara-python",
+    # Threat intelligence (already in ti)
+    "OTXv2",
+    "pymisp",
+]
+osint-binaries = [
+    # Optional: Binary tools for maximum performance
+    # These require system-level installation (brew/apt)
+    # amass, nuclei, subfinder, masscan, zmap, waybackurls, exiftool, yara
+]
 all = [
-    "hackerdogs-tools[dev,ti]",
+    "hackerdogs-tools[dev,ti,osint]",
 ]
 
 [project.urls]

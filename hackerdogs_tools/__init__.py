@@ -3,6 +3,7 @@ HackerDogs Tools - LangChain, CrewAI, and MCP Server Tools for hackerdogs.ai Pla
 
 This package provides comprehensive tools for:
 - Threat Intelligence (TI) tools (OTX, VirusTotal, MISP, OpenCTI)
+- OSINT tools (Infrastructure, Identity, Content, Threat Intel, Metadata, Frameworks)
 - VictoriaLogs querying and analysis
 - Productivity tools (Excel, PowerPoint, OCR, Visualization)
 - Browser automation and web scraping
@@ -17,6 +18,7 @@ __version__ = "0.1.0"
 # Import main modules
 from . import ti
 from . import prodx
+from . import osint
 from . import victorialogs_tools
 from . import browserless_tool
 from . import tool_logging
@@ -24,6 +26,7 @@ from . import tool_logging
 __all__ = [
     "ti",
     "prodx",
+    "osint",
     "victorialogs_tools",
     "browserless_tool",
     "tool_logging",
