@@ -4,6 +4,11 @@ PowerPoint Operations Tools
 LangChain tools for PowerPoint presentation generation and manipulation.
 """
 
+import warnings
+# Suppress pptx deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='pptx')
+warnings.filterwarnings('ignore', category=UserWarning, module='pptx')
+
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from typing import Type, Dict, List, Optional, Any
@@ -154,7 +159,7 @@ class CreatePresentationTool(BaseTool):
     **Configuration:**
     Requires python-pptx library to be installed. The tool automatically creates a title slide
     and adds content slides based on the provided configuration. Output is base64-encoded for
-    easy integration with Streamlit downloads.
+    easy integration with other tools.
     """
     name: str = "create_presentation_deck"
     description: str = (

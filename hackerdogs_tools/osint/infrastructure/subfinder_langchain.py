@@ -34,7 +34,18 @@ def subfinder_enum(
     runtime: ToolRuntime,
     domain: str,
     recursive: bool = False,
-    silent: bool = True
+    silent: bool = True,
+    sources: Optional[str] = None,
+    exclude_sources: Optional[str] = None,
+    all_sources: bool = False,
+    rate_limit: Optional[int] = None,
+    timeout: int = 30,
+    max_time: int = 10,
+    provider_config: Optional[str] = None,
+    config: Optional[str] = None,
+    active: bool = False,
+    include_ip: bool = False,
+    collect_sources: bool = False
 ) -> str:
     """
     Enumerate subdomains using Subfinder (fast passive discovery).
@@ -42,14 +53,27 @@ def subfinder_enum(
     Subfinder is extremely fast for passive subdomain discovery using
     multiple passive sources. Use this for quick subdomain enumeration.
     
+    Reference: https://docs.projectdiscovery.io/opensource/subfinder/install
+    
     Args:
         runtime: ToolRuntime instance (automatically injected).
-        domain: Target domain.
-        recursive: Recursive enumeration (default: False).
-        silent: Silent mode (default: True).
+        domain: Target domain to find subdomains for.
+        recursive: Use only sources that can handle subdomains recursively (default: False).
+        silent: Show only subdomains in output (default: True).
+        sources: Comma-separated list of specific sources to use (e.g., "crtsh,github").
+        exclude_sources: Comma-separated list of sources to exclude (e.g., "alienvault,zoomeyeapi").
+        all_sources: Use all sources for enumeration (slow) (default: False).
+        rate_limit: Maximum number of HTTP requests per second (default: None).
+        timeout: Seconds to wait before timing out (default: 30).
+        max_time: Minutes to wait for enumeration results (default: 10).
+        provider_config: Path to custom provider config file (default: $HOME/.config/subfinder/provider-config.yaml).
+        config: Path to custom flag config file (default: $CONFIG/subfinder/config.yaml).
+        active: Display active subdomains only (default: False).
+        include_ip: Include host IP in output (active only) (default: False).
+        collect_sources: Include all sources in the output (JSON only) (default: False).
     
     Returns:
-        JSON string with array of subdomains.
+        JSON string with subdomains and metadata.
     """
     try:
         safe_log_info(logger, f"[subfinder_enum] Starting enumeration", domain=domain)
@@ -64,15 +88,51 @@ def subfinder_enum(
             safe_log_error(logger, error_msg)
             return json.dumps({"status": "error", "message": error_msg})
         
+        # Build command arguments
         args = ["-d", domain, "-oJ", "-"]
+        
+        # Source options
+        if all_sources:
+            args.append("-all")
+        elif sources:
+            args.extend(["-s"] + sources.split(","))
+        
+        if exclude_sources:
+            args.extend(["-es"] + exclude_sources.split(","))
+        
         if recursive:
             args.append("-recursive")
+        
+        # Rate limiting
+        if rate_limit:
+            args.extend(["-rl", str(rate_limit)])
+        
+        # Timeouts
+        if timeout:
+            args.extend(["-timeout", str(timeout)])
+        if max_time:
+            args.extend(["-max-time", str(max_time)])
+        
+        # Config files
+        if provider_config:
+            args.extend(["-pc", provider_config])
+        if config:
+            args.extend(["-config", config])
+        
+        # Output options
+        if active:
+            args.append("-nW")
+        if include_ip:
+            args.append("-oI")
+        if collect_sources:
+            args.append("-cs")
         if silent:
             args.append("-silent")
         
         # Execute in Docker using official ProjectDiscovery image
         # Reference: https://docs.projectdiscovery.io/opensource/subfinder/running
-        docker_result = execute_in_docker("subfinder", args, timeout=300)
+        # Note: Config files must be mounted into container or use default locations
+        docker_result = execute_in_docker("subfinder", args, timeout=(max_time * 60) + 60)
         
         if docker_result["status"] != "success":
             error_msg = f"Subfinder failed: {docker_result.get('stderr', docker_result.get('message', 'Unknown error'))}"

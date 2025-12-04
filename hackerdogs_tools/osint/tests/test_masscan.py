@@ -10,15 +10,24 @@ Tests:
 import pytest
 import json
 import os
-from langchain.agents import create_agent, AgentExecutor
-from langchain.tools import ToolRuntime
+import sys
+from pathlib import Path
+
+# Add project root to path for direct execution
+project_root = Path(__file__).parent.parent.parent.parent.parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage
 from crewai import Agent, Task, Crew
 
 from hackerdogs_tools.osint.infrastructure.masscan_langchain import masscan_scan
 from hackerdogs_tools.osint.infrastructure.masscan_crewai import MasscanTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
-from hackerdogs_tools.osint.test_domains import get_random_domain, get_crewai_llm_from_env
+from hackerdogs_tools.osint.test_domains import get_random_domain
+from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result
 
 
 class TestMasscanStandalone:
@@ -26,27 +35,54 @@ class TestMasscanStandalone:
     
     def test_masscan_standalone(self):
         """Test masscan tool execution without agent."""
-        runtime = ToolRuntime(state={"user_id": "test_user"})
+        # Use mock runtime since ToolRuntime is auto-injected in LangChain 1.x
+        runtime = create_mock_runtime(state={"user_id": "test_user"})
         
-        result = masscan_scan(
-            runtime=runtime,
-            ip_range="10.0.0.0/8", ports="80,443", rate=1000
-        )
+        # Use a random real domain instead of reserved example.com
+        test_domain = get_random_domain()
+        
+        # Tools are StructuredTool objects - use invoke() method
+        result = masscan_scan.invoke({
+            "runtime": runtime,
+            "domain": test_domain,
+            "recursive": False,
+            "silent": True
+        })
         
         # Parse result
         result_data = json.loads(result)
         
+        # Print JSON output for verification
+        print("\n" + "=" * 80)
+        print("TOOL JSON OUTPUT:")
+        print("=" * 80)
+        print(json.dumps(result_data, indent=2))
+        print("=" * 80 + "\n")
+        
+        # Save JSON result to file
+        result_file = save_test_result("masscan", "standalone", result_data, test_domain)
+        print(f"📁 JSON result saved to: {result_file}")
+        
         # Assertions
-        assert "status" in result_data
-        assert result_data["status"] in ["success", "error"]
+        assert "status" in result_data, f"Missing 'status' in result: {result_data}"
+        assert result_data["status"] in ["success", "error"], f"Invalid status: {result_data.get('status')}"
         
         if result_data["status"] == "success":
-            assert "execution_method" in result_data
-            assert result_data["execution_method"] == "docker"
+            assert "execution_method" in result_data, f"Missing 'execution_method' in result: {result_data}"
+            # Tool can return "docker" or "official_docker_image" depending on execution method
+            assert result_data["execution_method"] in ["docker", "official_docker_image"], \
+                f"Invalid execution_method: {result_data.get('execution_method')}"
+            assert "domain" in result_data, f"Missing 'domain' in result: {result_data}"
+            assert "subdomains" in result_data, f"Missing 'subdomains' in result: {result_data}"
+            assert isinstance(result_data["subdomains"], list), f"subdomains must be a list: {type(result_data.get('subdomains'))}"
+            print(f"✅ Tool executed successfully")
+            print(f"   Domain: {result_data.get('domain')}")
+            print(f"   Subdomains found: {result_data.get('count', 0)}")
+            print(f"   Execution method: {result_data.get('execution_method')}")
         else:
             # If error, should have message
-            assert "message" in result_data
-            print(f"Tool returned error (expected if Docker not set up): {result_data.get('message')}")
+            assert "message" in result_data, f"Error status but no message: {result_data}"
+            print(f"⚠️  Tool returned error: {result_data.get('message')}")
 
 
 class TestMasscanLangChain:
@@ -70,25 +106,26 @@ class TestMasscanLangChain:
     
     def test_masscan_langchain_agent(self, agent):
         """Test masscan tool with LangChain agent."""
-        runtime = ToolRuntime(state={"user_id": "test_user"})
+        # Use a random real domain instead of reserved example.com
+        test_domain = get_random_domain()
         
-        # Create agent executor
-        executor = AgentExecutor(
-            agent=agent,
-            tools=[masscan_scan],
-            verbose=True
-        )
-        
-        # Execute query
-        result = executor.invoke({
-            "messages": [HumanMessage(content="Scan IP range 10.0.0.0/8 for ports 80,443 using Masscan")],
-            "runtime": runtime
+        # Execute query directly (agent is a runnable in LangChain 1.x)
+        # ToolRuntime is automatically injected by the agent
+        result = agent.invoke({
+            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Masscan")]
         })
         
-        # Assertions
-        assert result is not None
-        assert "messages" in result or "output" in result
-        print(f"LangChain agent result: {result}")
+        # Assertions        assert result is not None, "Agent returned None"
+        assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
+        
+        # Print agent result for verification
+        print("\n" + "=" * 80)
+        print("LANGCHAIN AGENT RESULT:")
+        print("=" * 80)
+        if "messages" in result:
+            for msg in result["messages"]:
+                print(f"  {msg.__class__.__name__}: {str(msg.content)[:200]}")
+        print("=" * 80 + "\n")
 
 
 class TestMasscanCrewAI:
@@ -113,8 +150,11 @@ class TestMasscanCrewAI:
     
     def test_masscan_crewai_agent(self, agent, llm):
         """Test masscan tool with CrewAI agent."""
+        # Use a random real domain instead of reserved example.com
+        test_domain = get_random_domain()
+        
         task = Task(
-            description="Scan IP range 10.0.0.0/8 for ports 80,443 using Masscan",
+            description=f"Find subdomains for {test_domain} using Masscan",
             agent=agent,
             expected_output="Results from masscan tool"
         )
@@ -129,9 +169,14 @@ class TestMasscanCrewAI:
         # Execute task
         result = crew.kickoff()
         
-        # Assertions
-        assert result is not None
-        print(f"CrewAI agent result: {result}")
+        # Assertions        assert result is not None, "CrewAI returned None"
+        
+        # Print CrewAI result for verification
+        print("\n" + "=" * 80)
+        print("CREWAI AGENT RESULT:")
+        print("=" * 80)
+        print(str(result)[:500])
+        print("=" * 80 + "\n")
 
 
 def run_all_tests():
@@ -153,21 +198,97 @@ def run_all_tests():
     print("\n2. Testing LangChain Agent Integration...")
     try:
         llm = get_llm_from_env()
-        test = TestMasscanLangChain()
-        test.test_masscan_langchain_agent(test.agent(llm))
-        print("✅ LangChain test passed")
+        # Create agent directly (not using pytest fixtures)
+        tools = [masscan_scan]
+        agent = create_agent(
+            model=llm,
+            tools=tools,
+            system_prompt="You are a cybersecurity analyst. Use the masscan tool for OSINT operations."
+        )
+        # Use a random real domain instead of reserved example.com
+        test_domain = get_random_domain()
+        
+        # Execute query directly (agent is a runnable in LangChain 1.x)
+        # ToolRuntime is automatically injected by the agent
+        result = agent.invoke({
+            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Masscan")]
+        })
+        
+        # Assertions        assert result is not None
+        assert "messages" in result or "output" in result
+        
+        # Save LangChain agent result
+        try:
+            result_data = {
+                "status": "success",
+                "agent_type": "langchain",
+                "result": str(result)[:1000] if result else None,
+                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "domain": test_domain
+            }
+            result_file = save_test_result("masscan", "langchain", result_data, test_domain)
+            print(f"📁 LangChain result saved to: {result_file}")
+        except Exception as e:
+            print(f"⚠️  Could not save LangChain result: {e}")
+        
+        print(f"✅ LangChain test passed")
     except Exception as e:
         print(f"❌ LangChain test failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
     # Test 3: CrewAI
     print("\n3. Testing CrewAI Agent Integration...")
     try:
         llm = get_crewai_llm_from_env()
-        test = TestMasscanCrewAI()
-        test.test_masscan_crewai_agent(test.agent(llm), llm)
-        print("✅ CrewAI test passed")
+        # Create agent directly (not using pytest fixtures)
+        agent = Agent(
+            role="OSINT Analyst",
+            goal="Perform OSINT operations using masscan",
+            backstory="You are an expert OSINT analyst.",
+            tools=[MasscanTool()],
+            llm=llm,
+            verbose=True
+        )
+        # Use a random real domain instead of reserved example.com
+        test_domain = get_random_domain()
+        
+        task = Task(
+            description=f"Find subdomains for {test_domain} using Masscan",
+            agent=agent,
+            expected_output="Results from masscan tool"
+        )
+        
+        crew = Crew(
+            agents=[agent],
+            tasks=[task],
+            llm=llm,
+            verbose=True
+        )
+        
+        # Execute task
+        result = crew.kickoff()
+        
+        # Assertions        assert result is not None
+        
+        # Save CrewAI agent result
+        try:
+            result_data = {
+                "status": "success",
+                "agent_type": "crewai",
+                "result": str(result)[:1000] if result else None,
+                "domain": test_domain
+            }
+            result_file = save_test_result("masscan", "crewai", result_data, test_domain)
+            print(f"📁 CrewAI result saved to: {result_file}")
+        except Exception as e:
+            print(f"⚠️  Could not save CrewAI result: {e}")
+        
+        print(f"✅ CrewAI test passed")
     except Exception as e:
         print(f"❌ CrewAI test failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
     print("\n" + "=" * 80)
     print("All tests completed!")

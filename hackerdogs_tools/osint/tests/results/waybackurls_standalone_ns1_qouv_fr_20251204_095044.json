@@ -1,0 +1,14 @@
+{
+  "tool": "waybackurls",
+  "test_type": "standalone",
+  "timestamp": "20251204_095044",
+  "domain": "ns1.qouv.fr",
+  "result": {
+    "status": "success",
+    "message": "Tool execution not yet implemented",
+    "domain": "ns1.qouv.fr",
+    "no_subs": false,
+    "dates": null,
+    "user_id": "test_user"
+  }
+}

@@ -6,15 +6,15 @@ This module provides tools for metadata extraction including:
 - YARA for pattern matching
 """
 
-from .exiftool_langchain import exiftool_extract
+from .exiftool_langchain import exiftool_search
 from .exiftool_crewai import ExifToolTool
-from .yara_langchain import yara_scan
+from .yara_langchain import yara_search
 from .yara_crewai import YARATool
 
 __all__ = [
-    "exiftool_extract",
+    "exiftool_search",
     "ExifToolTool",
-    "yara_scan",
+    "yara_search",
     "YARATool",
 ]
 

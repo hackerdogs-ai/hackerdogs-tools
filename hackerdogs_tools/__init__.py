@@ -17,7 +17,13 @@ __version__ = "0.1.0"
 
 # Import main modules
 from . import ti
-from . import prodx
+# Import prodx with warnings suppressed
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings('ignore', category=DeprecationWarning, module='pptx')
+    warnings.filterwarnings('ignore', category=DeprecationWarning, message='.*PyPDF2.*')
+    warnings.filterwarnings('ignore', category=UserWarning, module='pptx')
+    from . import prodx
 from . import osint
 from . import victorialogs_tools
 from . import browserless_tool

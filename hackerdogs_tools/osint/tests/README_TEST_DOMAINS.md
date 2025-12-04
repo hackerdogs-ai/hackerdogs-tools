@@ -2,7 +2,27 @@
 
 ## Overview
 
-The `test_domains.py` module provides random domain selection from the OpenDNS random domains list (`opendns-random-domains.txt`) for testing OSINT tools. This ensures tests use **real, valid domains** instead of reserved domains like `example.com`.
+The `test_domains.py` module provides random domain selection from **mixed legitimate and malicious domains** for testing OSINT tools. This ensures tests use **real, valid domains** instead of reserved domains like `example.com`, and allows testing against both legitimate and known malicious domains.
+
+## Domain Sources
+
+### Legitimate Domains
+- **Source:** `opendns-random-domains.txt`
+- **Count:** ~10,000 domains
+- **Purpose:** Test tools against normal, legitimate domains
+
+### Malicious Domains
+- **Sources:**
+  - `blackbook/blackbook.txt` (~18,150 domains)
+  - `malicious-domains/full-domains-aa.txt` (~120,261 domains)
+  - `malicious-domains/full-domains-ab.txt` (~19,073 domains)
+  - `malicious-domains/full-domains-ac.txt` (~2,212 domains)
+- **Total:** ~160,000 malicious domains (deduplicated to ~144,236)
+- **Purpose:** Test tools against known malicious/compromised domains
+
+### Mixed Pool
+- **Total:** ~154,236 domains (good + malicious combined)
+- **Default:** Returns random domains from mixed pool
 
 ## Why Not example.com?
 
@@ -14,14 +34,31 @@ The `test_domains.py` module provides random domain selection from the OpenDNS r
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (Mixed - Default)
 
 ```python
 from hackerdogs_tools.osint.test_domains import get_random_domain
 
-# Get a single random domain
+# Get a single random domain (mixed: good or malicious)
 domain = get_random_domain()
-print(domain)  # e.g., "webmagnat.ro"
+print(domain)  # e.g., "webmagnat.ro" or "statsrvv.com"
+```
+
+### Domain Type Selection
+
+```python
+from hackerdogs_tools.osint.test_domains import get_random_domain
+
+# Get only legitimate domains
+good_domain = get_random_domain("good")
+print(good_domain)  # e.g., "webmagnat.ro"
+
+# Get only malicious domains
+malicious_domain = get_random_domain("malicious")
+print(malicious_domain)  # e.g., "statsrvv.com"
+
+# Get mixed (default)
+mixed_domain = get_random_domain("mixed")  # or just get_random_domain()
 ```
 
 ### In Tests
@@ -32,7 +69,7 @@ from hackerdogs_tools.osint.test_domains import get_random_domain
 def test_subfinder_standalone(self):
     runtime = ToolRuntime(state={"user_id": "test_user"})
     
-    # Use a random real domain instead of reserved example.com
+    # Use a random real domain (mixed by default)
     test_domain = get_random_domain()
     
     result = subfinder_enum(
@@ -47,41 +84,66 @@ def test_subfinder_standalone(self):
 ```python
 from hackerdogs_tools.osint.test_domains import get_random_domains
 
-# Get 5 unique random domains
+# Get 5 unique random domains (mixed)
 domains = get_random_domains(count=5, unique=True)
-print(domains)  # ['webmagnat.ro', 'nickelfreesolutions.com', ...]
+print(domains)  # Mix of good and malicious domains
+
+# Get only good domains
+good_domains = get_random_domains(count=5, domain_type="good")
+
+# Get only malicious domains
+malicious_domains = get_random_domains(count=5, domain_type="malicious")
+
+# Get mixed with specific ratio (80% good, 20% malicious)
+balanced = get_random_domains(count=10, ratio=0.8)
 ```
 
 ## Available Functions
 
-### `get_random_domain() -> str`
-Get a single random domain from the list.
+### `get_random_domain(domain_type: str = "mixed") -> str`
+Get a single random domain from the specified pool.
+- `domain_type`: `"good"`, `"malicious"`, or `"mixed"` (default)
+- Returns: A random domain name
 
-### `get_random_domains(count: int = 1, unique: bool = True) -> List[str]`
+### `get_random_domains(count: int = 1, unique: bool = True, domain_type: str = "mixed", ratio: float = None) -> List[str]`
 Get multiple random domains.
 - `count`: Number of domains to return
 - `unique`: If True, ensure all domains are unique
+- `domain_type`: `"good"`, `"malicious"`, or `"mixed"` (default)
+- `ratio`: For `"mixed"` type, ratio of good to malicious (0.0-1.0)
+  - `0.5` = 50% good, 50% malicious
+  - `0.8` = 80% good, 20% malicious
+  - `None` = Random mix (default)
 
-### `get_domains_count() -> int`
-Get the total number of available domains (currently ~10,000).
+### `get_domains_count(domain_type: str = "mixed") -> int`
+Get the total number of available domains.
+- `domain_type`: `"good"`, `"malicious"`, or `"mixed"` (default)
+- Returns: Count of domains in specified pool
 
 ### `reset_cache() -> None`
-Reset the domains cache (useful if file is updated).
+Reset all domain caches (useful if files are updated).
 
-## Domain Source
+## Domain Statistics
 
-The domains come from `opendns-random-domains.txt` which contains:
-- **10,000 real domains** from OpenDNS
+Current domain counts:
+- **Good domains:** ~10,000 (from OpenDNS)
+- **Malicious domains:** ~144,236 (from blackbook + malicious-domains files)
+- **Total (mixed):** ~154,236 domains
+
+All domains are:
+- Real, resolvable domains
 - One domain per line
-- Real, resolvable domains suitable for testing
+- Deduplicated (malicious domains are deduplicated across all sources)
 
 ## Benefits
 
 ✅ **Real domains** - Actual, resolvable domains  
-✅ **Variety** - 10,000 different domains  
+✅ **Variety** - 154,000+ different domains  
+✅ **Mixed testing** - Test against both legitimate and malicious domains  
 ✅ **Random** - Different domain each test run  
 ✅ **No conflicts** - Not reserved or special-purpose domains  
-✅ **Realistic** - Better test coverage  
+✅ **Realistic** - Better test coverage with real-world scenarios  
+✅ **Malicious domain testing** - Test threat intelligence tools against known bad domains  
 
 ## Migration
 

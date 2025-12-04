@@ -7,7 +7,7 @@ Fast passive subdomain discovery using ProjectDiscovery Subfinder.
 import json
 import subprocess
 import shutil
-from typing import Any
+from typing import Any, Optional
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from hd_logging import setup_logger
@@ -22,6 +22,17 @@ class SubfinderToolSchema(BaseModel):
     domain: str = Field(..., description="Target domain to enumerate")
     recursive: bool = Field(default=False, description="Recursive enumeration")
     silent: bool = Field(default=True, description="Silent mode")
+    sources: Optional[str] = Field(default=None, description="Comma-separated list of specific sources (e.g., 'crtsh,github')")
+    exclude_sources: Optional[str] = Field(default=None, description="Comma-separated list of sources to exclude")
+    all_sources: bool = Field(default=False, description="Use all sources for enumeration (slow)")
+    rate_limit: Optional[int] = Field(default=None, description="Maximum HTTP requests per second")
+    timeout: int = Field(default=30, description="Seconds to wait before timing out")
+    max_time: int = Field(default=10, description="Minutes to wait for enumeration results")
+    provider_config: Optional[str] = Field(default=None, description="Path to custom provider config file")
+    config: Optional[str] = Field(default=None, description="Path to custom flag config file")
+    active: bool = Field(default=False, description="Display active subdomains only")
+    include_ip: bool = Field(default=False, description="Include host IP in output (active only)")
+    collect_sources: bool = Field(default=False, description="Include all sources in output (JSON only)")
 
 
 class SubfinderTool(BaseTool):
@@ -45,19 +56,72 @@ class SubfinderTool(BaseTool):
                 "2. Start container: docker-compose up -d"
             )
     
-    def _run(self, domain: str, recursive: bool = False, silent: bool = True, **kwargs: Any) -> str:
+    def _run(
+        self,
+        domain: str,
+        recursive: bool = False,
+        silent: bool = True,
+        sources: Optional[str] = None,
+        exclude_sources: Optional[str] = None,
+        all_sources: bool = False,
+        rate_limit: Optional[int] = None,
+        timeout: int = 30,
+        max_time: int = 10,
+        provider_config: Optional[str] = None,
+        config: Optional[str] = None,
+        active: bool = False,
+        include_ip: bool = False,
+        collect_sources: bool = False,
+        **kwargs: Any
+    ) -> str:
         """Execute Subfinder enumeration in Docker container."""
         try:
             safe_log_info(logger, f"[SubfinderTool] Starting", domain=domain)
             
+            # Build command arguments
             args = ["-d", domain, "-oJ", "-"]
+            
+            # Source options
+            if all_sources:
+                args.append("-all")
+            elif sources:
+                args.extend(["-s"] + sources.split(","))
+            
+            if exclude_sources:
+                args.extend(["-es"] + exclude_sources.split(","))
+            
             if recursive:
                 args.append("-recursive")
+            
+            # Rate limiting
+            if rate_limit:
+                args.extend(["-rl", str(rate_limit)])
+            
+            # Timeouts
+            if timeout:
+                args.extend(["-timeout", str(timeout)])
+            if max_time:
+                args.extend(["-max-time", str(max_time)])
+            
+            # Config files
+            if provider_config:
+                args.extend(["-pc", provider_config])
+            if config:
+                args.extend(["-config", config])
+            
+            # Output options
+            if active:
+                args.append("-nW")
+            if include_ip:
+                args.append("-oI")
+            if collect_sources:
+                args.append("-cs")
             if silent:
                 args.append("-silent")
             
             # Execute in Docker
-            docker_result = execute_in_docker("subfinder", args, timeout=300)
+            # Note: Config files must be mounted into container or use default locations
+            docker_result = execute_in_docker("subfinder", args, timeout=(max_time * 60) + 60)
             
             if docker_result["status"] != "success":
                 return json.dumps({

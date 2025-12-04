@@ -4,6 +4,11 @@ OCR Tools
 LangChain tools for extracting text from images and documents using OCR.
 """
 
+import warnings
+# Suppress PyPDF2 deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning, message='.*PyPDF2.*')
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='PyPDF2')
+
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from typing import Type, Dict, List, Optional, Any

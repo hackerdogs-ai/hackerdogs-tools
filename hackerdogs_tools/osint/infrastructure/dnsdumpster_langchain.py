@@ -43,7 +43,7 @@ def dnsdumpster_search(
         JSON string with results.
     """
     try:
-        safe_log_info(logger, f"[dnsdumpster_search] Starting", domain)
+        safe_log_info(logger, f"[dnsdumpster_search] Starting", domain=domain)
         
         if not _check_dnsdumpster_installed():
             error_msg = "DNSDumpster not found. Please install it."

@@ -1,0 +1,10 @@
+{
+  "tool": "amass",
+  "test_type": "standalone",
+  "timestamp": "20251204_094106",
+  "domain": "olx.pl-9843111.icu",
+  "result": {
+    "status": "error",
+    "message": "Amass enumeration failed: "
+  }
+}

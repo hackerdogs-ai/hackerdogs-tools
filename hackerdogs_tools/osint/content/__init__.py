@@ -7,19 +7,19 @@ This module provides tools for content gathering including:
 - Dark web search (OnionSearch)
 """
 
-from .scrapy_langchain import scrapy_scrape
+from .scrapy_langchain import scrapy_search
 from .scrapy_crewai import ScrapyTool
-from .waybackurls_langchain import waybackurls_query
+from .waybackurls_langchain import waybackurls_search
 from .waybackurls_crewai import WaybackurlsTool
-from .onionsearch_langchain import onionsearch_query
+from .onionsearch_langchain import onionsearch_search
 from .onionsearch_crewai import OnionSearchTool
 
 __all__ = [
-    "scrapy_scrape",
+    "scrapy_search",
     "ScrapyTool",
-    "waybackurls_query",
+    "waybackurls_search",
     "WaybackurlsTool",
-    "onionsearch_query",
+    "onionsearch_search",
     "OnionSearchTool",
 ]
 

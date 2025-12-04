@@ -384,7 +384,8 @@ def execute_official_docker_image(
     image: str,
     args: List[str],
     timeout: int = 300,
-    docker_runtime: str = "docker"
+    docker_runtime: str = "docker",
+    volumes: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Execute a command using an official Docker image (docker run).
@@ -401,11 +402,13 @@ def execute_official_docker_image(
         args: Command arguments
         timeout: Execution timeout
         docker_runtime: Docker runtime ("docker" or "podman")
+        volumes: Optional list of volume mounts (e.g., ["/host/path:/container/path:ro"])
     
     Returns:
         Execution result dictionary
     """
     import time
+    import os
     start_time = time.time()
     
     try:
@@ -415,8 +418,22 @@ def execute_official_docker_image(
             docker_runtime, "run",
             "--rm",
             "-i",  # Interactive mode for stdin
-            image
-        ] + args
+        ]
+        
+        # Add volume mounts if provided
+        if volumes:
+            for volume in volumes:
+                cmd.extend(["-v", volume])
+        else:
+            # Auto-mount subfinder config if it exists
+            home = os.path.expanduser("~")
+            config_dir = os.path.join(home, ".config", "subfinder")
+            if os.path.exists(config_dir):
+                # Mount config directory to default location in container
+                cmd.extend(["-v", f"{config_dir}:/root/.config/subfinder:ro"])
+        
+        cmd.append(image)
+        cmd.extend(args)
         
         safe_log_debug(logger, f"[execute_official_docker_image] Running", image=image, args=args)
         

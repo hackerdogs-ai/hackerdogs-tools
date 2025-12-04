@@ -8,20 +8,23 @@ This module provides tools for threat intelligence including:
 - MISP (Malware Information Sharing Platform) - CrewAI version
 """
 
-from .urlhaus_langchain import urlhaus_check
+from .urlhaus_langchain import urlhaus_search
 from .urlhaus_crewai import URLHausTool
-from .abuseipdb_langchain import abuseipdb_check
+from .abuseipdb_langchain import abuseipdb_search
 from .abuseipdb_crewai import AbuseIPDBTool
-# OTX and MISP LangChain versions are in hackerdogs_tools.ti
+from .otx_langchain import otx_search
 from .otx_crewai import OTXTool
+from .misp_langchain import misp_search
 from .misp_crewai import MISPTool
 
 __all__ = [
-    "urlhaus_check",
+    "urlhaus_search",
     "URLHausTool",
-    "abuseipdb_check",
+    "abuseipdb_search",
     "AbuseIPDBTool",
+    "otx_search",
     "OTXTool",
+    "misp_search",
     "MISPTool",
 ]
 

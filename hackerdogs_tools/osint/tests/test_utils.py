@@ -98,6 +98,8 @@ def get_crewai_llm_from_env() -> LLM:
     if provider == "ollama":
         if not base_url:
             base_url = "http://localhost:11434"
+        # CrewAI LLM for Ollama - use ollama/model_name format with base_url
+        # This uses LiteLLM under the hood (no fallback, direct support)
         return LLM(
             model=f"ollama/{model_name}",
             base_url=base_url

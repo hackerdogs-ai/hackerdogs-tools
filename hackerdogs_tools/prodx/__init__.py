@@ -20,10 +20,28 @@ from .powerpoint_tools import (
     AddSlideTool,
     AddChartToSlideTool,
 )
-from .visualization_tools import (
-    CreatePlotlyChartTool,
-    CreateChartFromFileTool,
-)
+# Visualization tools are functions, not classes
+# Import them conditionally to avoid breaking if dependencies are missing
+try:
+    from .visualization_tools import (
+        create_line_chart,
+        create_bar_chart,
+        create_pie_chart,
+        create_scatter_plot,
+        create_heatmap,
+        create_histogram,
+        recommend_chart_type,
+        create_chart_from_file,
+    )
+    # For backward compatibility, create aliases
+    CreatePlotlyChartTool = create_line_chart  # Default to line chart
+    CreateChartFromFileTool = create_chart_from_file
+    VISUALIZATION_TOOLS_AVAILABLE = True
+except ImportError:
+    VISUALIZATION_TOOLS_AVAILABLE = False
+    # Create dummy classes if import fails
+    CreatePlotlyChartTool = None
+    CreateChartFromFileTool = None
 from .ocr_tools import (
     ExtractTextFromImageTool,
     ExtractTextFromPDFImagesTool,

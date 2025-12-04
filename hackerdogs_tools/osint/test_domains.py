@@ -131,7 +131,7 @@ def _load_malicious_domains() -> List[str]:
         )
     
     _MALICIOUS_DOMAINS_CACHE = list(all_malicious)
-    print(f"Loaded {len(_MALICIOUS_DOMAINS_CACHE)} malicious domains from {len(found_files)} files")
+    # Silent loading - no print output during normal import/usage
     return _MALICIOUS_DOMAINS_CACHE
 
 
@@ -194,13 +194,26 @@ def get_random_domain(
     return random.choice(domains)
 
 
-def get_random_domains(count: int = 1, unique: bool = True) -> List[str]:
+def get_random_domains(
+    count: int = 1,
+    unique: bool = True,
+    domain_type: Literal["good", "malicious", "mixed"] = "mixed",
+    ratio: Optional[float] = None
+) -> List[str]:
     """
-    Get multiple random domains from the OpenDNS random domains list.
+    Get multiple random domains from the available domain pools.
     
     Args:
         count: Number of domains to return (default: 1)
         unique: If True, ensure all domains are unique (default: True)
+        domain_type: Type of domains to return
+            - "good": Only legitimate domains
+            - "malicious": Only malicious domains
+            - "mixed": Mixed pool (default)
+        ratio: For "mixed" type, ratio of good to malicious (0.0-1.0)
+            - 0.5 = 50% good, 50% malicious (default)
+            - 0.8 = 80% good, 20% malicious
+            - None = Random mix (default)
     
     Returns:
         List of random domain names
@@ -211,9 +224,37 @@ def get_random_domains(count: int = 1, unique: bool = True) -> List[str]:
     Example:
         >>> domains = get_random_domains(count=5)
         >>> print(domains)
-        ["example.org", "test.net", "sample.com", "demo.io", "site.org"]
+        ["example.org", "statsrvv.com", "test.net", "kaspersky-secure.ru", "demo.io"]
+        
+        >>> good_domains = get_random_domains(count=5, domain_type="good")
+        >>> malicious_domains = get_random_domains(count=5, domain_type="malicious")
     """
-    domains = _load_domains()
+    if domain_type == "good":
+        domains = _load_good_domains()
+    elif domain_type == "malicious":
+        domains = _load_malicious_domains()
+    else:  # mixed
+        if ratio is not None:
+            # Get domains based on ratio
+            good = _load_good_domains()
+            malicious = _load_malicious_domains()
+            
+            good_count = int(count * ratio)
+            malicious_count = count - good_count
+            
+            if unique:
+                if good_count > len(good) or malicious_count > len(malicious):
+                    raise ValueError("Not enough unique domains for specified ratio")
+                selected = random.sample(good, good_count) + random.sample(malicious, malicious_count)
+                random.shuffle(selected)  # Shuffle to mix them
+                return selected
+            else:
+                return (
+                    [random.choice(good) for _ in range(good_count)] +
+                    [random.choice(malicious) for _ in range(malicious_count)]
+                )
+        else:
+            domains = _load_mixed_domains()
     
     if unique:
         if count > len(domains):
@@ -230,6 +271,7 @@ def get_domain_for_testing() -> str:
     Get a domain suitable for testing.
     
     This is an alias for get_random_domain() for clarity in test code.
+    Returns a mixed domain by default.
     
     Returns:
         A random domain name for testing
@@ -249,22 +291,35 @@ def get_test_domain() -> str:
 
 def reset_cache() -> None:
     """
-    Reset the domains cache.
+    Reset all domain caches.
     
-    Useful for testing or if the domains file is updated.
+    Useful for testing or if the domain files are updated.
     """
-    global _DOMAINS_CACHE
-    _DOMAINS_CACHE = None
+    global _GOOD_DOMAINS_CACHE, _MALICIOUS_DOMAINS_CACHE, _MIXED_DOMAINS_CACHE
+    _GOOD_DOMAINS_CACHE = None
+    _MALICIOUS_DOMAINS_CACHE = None
+    _MIXED_DOMAINS_CACHE = None
 
 
-def get_domains_count() -> int:
+def get_domains_count(domain_type: Literal["good", "malicious", "mixed"] = "mixed") -> int:
     """
     Get the total number of available domains.
     
+    Args:
+        domain_type: Type of domains to count
+            - "good": Count legitimate domains only
+            - "malicious": Count malicious domains only
+            - "mixed": Count all domains (default)
+    
     Returns:
-        Number of domains in the file
+        Number of domains available
     """
-    return len(_load_domains())
+    if domain_type == "good":
+        return len(_load_good_domains())
+    elif domain_type == "malicious":
+        return len(_load_malicious_domains())
+    else:  # mixed
+        return len(_load_mixed_domains())
 
 
 # Convenience function for backward compatibility
@@ -273,7 +328,7 @@ def random_domain() -> str:
     Get a random domain (alias for get_random_domain).
     
     Returns:
-        A random domain name
+        A random domain name (mixed by default)
     """
     return get_random_domain()
 
@@ -281,8 +336,17 @@ def random_domain() -> str:
 if __name__ == "__main__":
     # Test the module
     print("Testing test_domains module...")
-    print(f"Total domains available: {get_domains_count()}")
-    print(f"\nRandom domain: {get_random_domain()}")
-    print(f"\n5 random domains: {get_random_domains(5)}")
-    print(f"\n10 unique domains: {get_random_domains(10, unique=True)}")
-
+    print("=" * 60)
+    print(f"Good domains: {get_domains_count('good'):,}")
+    print(f"Malicious domains: {get_domains_count('malicious'):,}")
+    print(f"Total (mixed): {get_domains_count('mixed'):,}")
+    print("=" * 60)
+    
+    print(f"\nRandom mixed domain: {get_random_domain()}")
+    print(f"Random good domain: {get_random_domain('good')}")
+    print(f"Random malicious domain: {get_random_domain('malicious')}")
+    
+    print(f"\n5 random mixed domains: {get_random_domains(5)}")
+    print(f"5 good domains: {get_random_domains(5, domain_type='good')}")
+    print(f"5 malicious domains: {get_random_domains(5, domain_type='malicious')}")
+    print(f"10 mixed (80% good): {get_random_domains(10, ratio=0.8)}")

@@ -1,0 +1,14 @@
+{
+  "tool": "subfinder",
+  "test_type": "standalone",
+  "timestamp": "20251204_093318",
+  "domain": "apple.macos.help",
+  "result": {
+    "status": "success",
+    "domain": "apple.macos.help",
+    "subdomains": [],
+    "count": 0,
+    "execution_method": "official_docker_image",
+    "user_id": "test_user"
+  }
+}

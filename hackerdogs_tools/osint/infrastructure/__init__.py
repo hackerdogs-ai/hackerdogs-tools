@@ -20,7 +20,7 @@ from .zmap_langchain import zmap_scan
 from .zmap_crewai import ZMapTool
 from .theharvester_langchain import theharvester_search
 from .theharvester_crewai import TheHarvesterTool
-from .dnsdumpster_langchain import dnsdumpster_query
+from .dnsdumpster_langchain import dnsdumpster_search
 from .dnsdumpster_crewai import DNSDumpsterTool
 
 __all__ = [
@@ -31,7 +31,7 @@ __all__ = [
     "masscan_scan",
     "zmap_scan",
     "theharvester_search",
-    "dnsdumpster_query",
+    "dnsdumpster_search",
     # CrewAI tools
     "AmassTool",
     "NucleiTool",
