@@ -1,0 +1,8 @@
+{
+  "status": "success",
+  "target": "https://luongcao.com",
+  "findings": [],
+  "count": 0,
+  "execution_method": "official_docker_image",
+  "user_id": "test_user"
+}
