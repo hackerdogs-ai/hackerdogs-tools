@@ -39,7 +39,12 @@ class TestNucleiStandalone:
         runtime = create_mock_runtime(state={"user_id": "test_user"})
         
         # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use "good" domains if malicious domain files are missing
+        try:
+            test_domain = get_random_domain("mixed")
+        except FileNotFoundError:
+            # Fallback to good domains if malicious files are missing
+            test_domain = get_random_domain("good")
         
         # Tools are StructuredTool objects - use invoke() method
         # Nuclei requires "target" parameter, not "domain"
@@ -109,7 +114,12 @@ class TestNucleiLangChain:
     def test_nuclei_langchain_agent(self, agent):
         """Test nuclei tool with LangChain agent."""
         # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use "good" domains if malicious domain files are missing
+        try:
+            test_domain = get_random_domain("mixed")
+        except FileNotFoundError:
+            # Fallback to good domains if malicious files are missing
+            test_domain = get_random_domain("good")
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
@@ -120,29 +130,21 @@ class TestNucleiLangChain:
         # Assertions
         assert result is not None, "Agent returned None"
         assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
-        # Save LangChain agent result
+        
+        # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            # Extract messages for better visibility
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:500] if hasattr(msg, 'content') else str(msg)[:500]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:1000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain
             }
             result_file = save_test_result("nuclei", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
+            import traceback
+            traceback.print_exc()
                 
         # Print agent result for verification
         print("\n" + "=" * 80)
@@ -177,7 +179,12 @@ class TestNucleiCrewAI:
     def test_nuclei_crewai_agent(self, agent, llm):
         """Test nuclei tool with CrewAI agent."""
         # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use "good" domains if malicious domain files are missing
+        try:
+            test_domain = get_random_domain("mixed")
+        except FileNotFoundError:
+            # Fallback to good domains if malicious files are missing
+            test_domain = get_random_domain("good")
         
         task = Task(
             description=f"Scan {test_domain} for vulnerabilities using Nuclei",
@@ -195,7 +202,9 @@ class TestNucleiCrewAI:
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None, "CrewAI returned None"
+        # Assertions
+        assert result is not None, "CrewAI returned None"
+        
         # Save CrewAI agent result - complete result as-is
         try:
             from .save_json_results import serialize_crewai_result
@@ -209,6 +218,8 @@ class TestNucleiCrewAI:
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
+            import traceback
+            traceback.print_exc()
         
         # Print CrewAI result for verification
         print("\n" + "=" * 80)
@@ -245,7 +256,12 @@ def run_all_tests():
             system_prompt="You are a cybersecurity analyst. Use the nuclei tool for vulnerability scanning."
         )
         # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use "good" domains if malicious domain files are missing
+        try:
+            test_domain = get_random_domain("mixed")
+        except FileNotFoundError:
+            # Fallback to good domains if malicious files are missing
+            test_domain = get_random_domain("good")
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
@@ -269,6 +285,8 @@ def run_all_tests():
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ LangChain test passed")
     except Exception as e:
@@ -290,7 +308,12 @@ def run_all_tests():
             verbose=True
         )
         # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use "good" domains if malicious domain files are missing
+        try:
+            test_domain = get_random_domain("mixed")
+        except FileNotFoundError:
+            # Fallback to good domains if malicious files are missing
+            test_domain = get_random_domain("good")
         
         task = Task(
             description=f"Scan {test_domain} for vulnerabilities using Nuclei",
@@ -311,18 +334,21 @@ def run_all_tests():
         # Assertions
         assert result is not None
         
-        # Save CrewAI agent result
+        # Save CrewAI agent result - complete result as-is
         try:
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,  # Complete result as-is, no truncation
+                "result": serialize_crewai_result(result) if result else None,
                 "domain": test_domain
             }
             result_file = save_test_result("nuclei", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ CrewAI test passed")
     except Exception as e:

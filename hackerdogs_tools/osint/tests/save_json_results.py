@@ -13,24 +13,18 @@ RESULTS_DIR = Path(__file__).parent / "results"
 def serialize_langchain_message(message: Any) -> Dict[str, Any]:
     """
     Serialize a LangChain message object to a dictionary.
-    
-    LangChain messages are Pydantic BaseModel objects, so we can use
-    model_dump() or dict() methods to serialize them properly.
-    
+
     Args:
         message: LangChain message object (HumanMessage, AIMessage, ToolMessage, etc.)
-        
+
     Returns:
         Dictionary representation of the message
     """
     try:
-        # Try Pydantic v2 method first
         if hasattr(message, 'model_dump'):
             return message.model_dump(mode='json')
-        # Fallback to Pydantic v1 method
         elif hasattr(message, 'dict'):
             return message.dict()
-        # Fallback to manual extraction
         elif hasattr(message, '__dict__'):
             msg_dict = {}
             # Extract common attributes
@@ -48,7 +42,6 @@ def serialize_langchain_message(message: Any) -> Dict[str, Any]:
                 msg_dict['tool_call_id'] = message.tool_call_id
             if hasattr(message, 'tool_calls'):
                 msg_dict['tool_calls'] = message.tool_calls
-            # Add message type
             msg_dict['type'] = message.__class__.__name__
             return msg_dict
         else:
@@ -64,18 +57,14 @@ def serialize_langchain_message(message: Any) -> Dict[str, Any]:
 def serialize_langchain_result(result: Any) -> Dict[str, Any]:
     """
     Serialize LangChain agent result to a dictionary.
-    
-    LangChain agent results typically contain a 'messages' list with
-    message objects that need proper serialization.
-    
+
     Args:
         result: LangChain agent result (dict with 'messages' key)
-        
+
     Returns:
         Dictionary with properly serialized messages
     """
     if not isinstance(result, dict):
-        # If result is not a dict, try to convert it
         if hasattr(result, 'model_dump'):
             result = result.model_dump(mode='json')
         elif hasattr(result, 'dict'):
@@ -84,47 +73,35 @@ def serialize_langchain_result(result: Any) -> Dict[str, Any]:
             result = result.__dict__
         else:
             return {"raw": str(result), "type": type(result).__name__}
-    
-    # Create a copy to avoid modifying the original
+
     serialized = result.copy()
-    
-    # Serialize messages if present
     if "messages" in serialized and isinstance(serialized["messages"], list):
         serialized["messages"] = [
             serialize_langchain_message(msg) for msg in serialized["messages"]
         ]
-    
     return serialized
 
 
 def serialize_crewai_result(result: Any) -> dict:
     """
     Serialize CrewAI result object to dictionary.
-    
-    CrewAI result is a CrewOutput (Pydantic BaseModel) which can be serialized
-    using model_dump() or dict() methods.
-    
+
     Args:
         result: CrewAI result object from crew.kickoff()
-        
+
     Returns:
         Dictionary representation of the complete CrewAI result
     """
     try:
-        # Try Pydantic v2 method first
         if hasattr(result, 'model_dump'):
             return result.model_dump(mode='json')
-        # Fallback to Pydantic v1 method
         elif hasattr(result, 'dict'):
             return result.dict()
-        # Fallback to dict() if it's already a dict-like object
         elif hasattr(result, '__dict__'):
             return result.__dict__
-        # Last resort: convert to string and try to parse
         else:
             return {"raw": str(result)}
     except Exception as e:
-        # If serialization fails, return error info
         return {
             "serialization_error": str(e),
             "result_type": str(type(result)),
@@ -132,14 +109,69 @@ def serialize_crewai_result(result: Any) -> dict:
         }
 
 
+class CustomJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle non-serializable objects."""
+    def default(self, obj):
+        if hasattr(obj, '__dict__'):
+            return obj.__dict__
+        try:
+            return str(obj)
+        except Exception:
+            return repr(obj)
+
+
+def serialize_object(obj: Any) -> Any:
+    """
+    Recursively serialize an object to JSON-serializable format.
+
+    Handles:
+    - LangChain message objects
+    - CrewAI result objects
+    - Custom objects with __dict__
+    - Lists and dicts
+    """
+    if isinstance(obj, dict):
+        return {k: serialize_object(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [serialize_object(item) for item in obj]
+    elif hasattr(obj, '__dict__'):
+        try:
+            obj_dict = {}
+            for key, value in obj.__dict__.items():
+                if not key.startswith('_'):
+                    obj_dict[key] = serialize_object(value)
+            return obj_dict
+        except Exception:
+            return str(obj)
+    elif hasattr(obj, 'model_dump'):
+        try:
+            return serialize_object(obj.model_dump())
+        except Exception:
+            return str(obj)
+    elif hasattr(obj, 'dict'):
+        try:
+            return serialize_object(obj.dict())
+        except Exception:
+            return str(obj)
+    else:
+        try:
+            json.dumps(obj)
+            return obj
+        except (TypeError, ValueError):
+            return str(obj)
+
+
 def save_test_result(tool_name: str, test_type: str, result_data: dict, domain: str = None):
     """
     Save test result JSON to file.
     
+    Saves verbatim tool responses WITHOUT any wrappers (no tool:, test_type:, etc.).
+    Only saves the actual tool response data.
+    
     Args:
-        tool_name: Name of the tool (e.g., "subfinder", "amass")
-        test_type: Type of test ("standalone", "langchain", "crewai")
-        result_data: JSON data to save
+        tool_name: Name of the tool (e.g., "subfinder", "amass") - used only for filename
+        test_type: Type of test ("standalone", "langchain", "crewai") - used only for filename
+        result_data: JSON data to save (can contain complex objects) - saved VERBATIM
         domain: Optional domain/test input for filename
     """
     # Ensure results directory exists
@@ -156,31 +188,29 @@ def save_test_result(tool_name: str, test_type: str, result_data: dict, domain: 
     
     filepath = RESULTS_DIR / filename
     
-    # Serialize result_data properly based on test type
-    serialized_result_data = result_data.copy()
-    
-    # If LangChain test, serialize the result dict properly
-    if test_type == "langchain" and "result" in serialized_result_data:
+    # Serialize result_data properly according to test type
+    if test_type == "langchain" and "result" in result_data:
+        # Special serialization for LangChain tests
+        serialized_result_data = result_data.copy()
         result_value = serialized_result_data["result"]
         if isinstance(result_value, dict):
             serialized_result_data["result"] = serialize_langchain_result(result_value)
         elif hasattr(result_value, 'model_dump'):
-            # If result is a Pydantic model, serialize it
             serialized_result_data["result"] = serialize_langchain_result(result_value)
-    
-    # Add metadata
-    output = {
-        "tool": tool_name,
-        "test_type": test_type,
-        "timestamp": timestamp,
-        "domain": domain,
-        "result": serialized_result_data
-    }
-    
-    # Write JSON file
-    # Use default=str as fallback for any remaining non-serializable objects
-    with open(filepath, 'w') as f:
-        json.dump(output, f, indent=2, default=str, ensure_ascii=False)  # ensure_ascii=False preserves unicode
+        output = {
+            "tool": tool_name,
+            "test_type": test_type,
+            "timestamp": timestamp,
+            "domain": domain,
+            "result": serialized_result_data
+        }
+        with open(filepath, 'w') as f:
+            json.dump(output, f, indent=2, default=str, ensure_ascii=False)
+    else:
+        # General (standalone/crewai/other) case: Save VERBATIM, no wrappers, direct serialization
+        serialized_result = serialize_object(result_data)
+        with open(filepath, 'w') as f:
+            json.dump(serialized_result, f, indent=2, cls=CustomJSONEncoder, ensure_ascii=False)
     
     return filepath
 

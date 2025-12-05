@@ -424,3 +424,4 @@ venv/
 *.db
 *.db-wal
 /hackerdogs_tools/osint/tests/results
+/hackerdogs_tools/osint/data
