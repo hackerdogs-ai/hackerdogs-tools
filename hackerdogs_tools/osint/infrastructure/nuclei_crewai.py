@@ -6,7 +6,6 @@ Template-based vulnerability scanner using ProjectDiscovery Nuclei.
 
 import json
 import subprocess
-import shutil
 from typing import Any, Optional, List
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -19,10 +18,12 @@ logger = setup_logger(__name__, log_file_path="logs/nuclei_tool.log")
 
 class NucleiToolSchema(BaseModel):
     """Input schema for NucleiTool."""
-    target: str = Field(..., description="URL or IP to scan")
-    templates: Optional[List[str]] = Field(default=None, description="Specific template IDs")
-    severity: Optional[str] = Field(default=None, description="Filter by severity (info, low, medium, high, critical)")
-    tags: Optional[List[str]] = Field(default=None, description="Filter by tags")
+    target: str = Field(..., description="URL or IP to scan (e.g., 'https://example.com' or '192.168.1.1')")
+    templates: Optional[List[str]] = Field(default=None, description="Specific template IDs to use (default: all templates)")
+    severity: Optional[str] = Field(default=None, description="Filter by severity: 'info', 'low', 'medium', 'high', 'critical'. Can specify multiple: 'critical,high'")
+    tags: Optional[List[str]] = Field(default=None, description="Filter by template tags (e.g., ['cve', 'xss', 'sqli'])")
+    rate_limit: Optional[int] = Field(default=None, ge=1, le=1000, description="Maximum requests per second (recommended: 50-150)")
+    concurrency: Optional[int] = Field(default=None, ge=1, le=200, description="Number of concurrent requests (recommended: 25-50)")
 
 
 class NucleiTool(BaseTool):
@@ -31,7 +32,9 @@ class NucleiTool(BaseTool):
     name: str = "Nuclei Vulnerability Scanner"
     description: str = (
         "Scan target for vulnerabilities using Nuclei templates. "
-        "Detects CVEs, misconfigurations, and security issues."
+        "Detects CVEs, misconfigurations, and security issues. "
+        "Best practices: Use rate limiting to avoid overwhelming targets, "
+        "filter by severity to focus on critical issues, and use specific templates for targeted scanning."
     )
     args_schema: type[BaseModel] = NucleiToolSchema
     
@@ -52,28 +55,57 @@ class NucleiTool(BaseTool):
         templates: Optional[List[str]] = None,
         severity: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        rate_limit: Optional[int] = None,
+        concurrency: Optional[int] = None,
         **kwargs: Any
     ) -> str:
-        """Execute Nuclei scan in Docker container."""
+        """
+        Execute Nuclei scan in Docker container.
+        
+        Reference: https://docs.projectdiscovery.io/opensource/nuclei/usage
+        """
         try:
             safe_log_info(logger, f"[NucleiTool] Starting scan", target=target)
             
+            # Build Nuclei command arguments
             args = ["-u", target, "-jsonl", "-o", "-"]
+            
+            # Template selection
             if templates:
                 args.extend(["-t", ",".join(templates)])
+            
+            # Severity filtering (e.g., "critical,high" or "critical")
             if severity:
                 args.extend(["-severity", severity])
+            
+            # Tag filtering
             if tags:
                 args.extend(["-tags", ",".join(tags)])
             
-            # Execute in Docker
+            # Rate limiting (requests per second)
+            if rate_limit:
+                args.extend(["-rate-limit", str(rate_limit)])
+            
+            # Concurrency control
+            if concurrency:
+                args.extend(["-c", str(concurrency)])
+            
+            # Execute in Docker (uses official projectdiscovery/nuclei image if available)
             docker_result = execute_in_docker("nuclei", args, timeout=600)
             
-            # Exit code 1 can mean findings were found (not an error)
-            if docker_result["status"] != "success" and docker_result.get("returncode", -1) not in [0, 1]:
+            # Nuclei exit codes:
+            # 0 = Success, no findings
+            # 1 = Success, findings found (not an error)
+            # >1 = Actual error
+            returncode = docker_result.get("returncode", -1)
+            if docker_result["status"] != "success" and returncode not in [0, 1]:
+                error_msg = docker_result.get("stderr", docker_result.get("message", "Unknown error"))
+                safe_log_error(logger, f"[NucleiTool] Docker execution failed", 
+                             error=error_msg, returncode=returncode)
                 return json.dumps({
                     "status": "error",
-                    "message": docker_result.get("stderr", docker_result.get("message", "Unknown error"))
+                    "message": f"Nuclei scan failed: {error_msg}",
+                    "returncode": returncode
                 })
             
             findings = []
@@ -90,12 +122,16 @@ class NucleiTool(BaseTool):
                 "target": target,
                 "findings": findings,
                 "count": len(findings),
-                "execution_method": "docker"
+                "execution_method": docker_result.get("execution_method", "docker")
             }
             
             return json.dumps(result_data, indent=2)
             
+        except subprocess.TimeoutExpired:
+            error_msg = "Nuclei scan timed out after 600 seconds"
+            safe_log_error(logger, f"[NucleiTool] {error_msg}", target=target)
+            return json.dumps({"status": "error", "message": error_msg})
         except Exception as e:
-            safe_log_error(logger, f"[NucleiTool] Error: {str(e)}", exc_info=True)
-            return json.dumps({"status": "error", "message": str(e)})
+            safe_log_error(logger, f"[NucleiTool] Unexpected error: {str(e)}", target=target, exc_info=True)
+            return json.dumps({"status": "error", "message": f"Unexpected error: {str(e)}"})
 

@@ -74,12 +74,12 @@ class TestNucleiStandalone:
             # Tool can return "docker" or "official_docker_image" depending on execution method
             assert result_data["execution_method"] in ["docker", "official_docker_image"], \
                 f"Invalid execution_method: {result_data.get('execution_method')}"
-            assert "domain" in result_data, f"Missing 'domain' in result: {result_data}"
-            assert "subdomains" in result_data, f"Missing 'subdomains' in result: {result_data}"
-            assert isinstance(result_data["subdomains"], list), f"subdomains must be a list: {type(result_data.get('subdomains'))}"
+            assert "target" in result_data, f"Missing 'target' in result: {result_data}"
+            assert "findings" in result_data, f"Missing 'findings' in result: {result_data}"
+            assert isinstance(result_data["findings"], list), f"findings must be a list: {type(result_data.get('findings'))}"
             print(f"✅ Tool executed successfully")
-            print(f"   Domain: {result_data.get('domain')}")
-            print(f"   Subdomains found: {result_data.get('count', 0)}")
+            print(f"   Target: {result_data.get('target')}")
+            print(f"   Findings found: {result_data.get('count', 0)}")
             print(f"   Execution method: {result_data.get('execution_method')}")
         else:
             # If error, should have message
@@ -100,9 +100,9 @@ class TestNucleiLangChain:
         """Create LangChain agent with nuclei tool."""
         tools = [nuclei_scan]
         agent = create_agent(
-            llm=llm,
+            model=llm,
             tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for OSINT operations."
+            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for vulnerability scanning."
         )
         return agent
     
@@ -114,10 +114,11 @@ class TestNucleiLangChain:
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Nuclei")]
+            "messages": [HumanMessage(content=f"Scan {test_domain} for vulnerabilities using Nuclei")]
         })
         
-        # Assertions        assert result is not None, "Agent returned None"
+        # Assertions
+        assert result is not None, "Agent returned None"
         assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
         
         # Print agent result for verification
@@ -142,9 +143,9 @@ class TestNucleiCrewAI:
     def agent(self, llm):
         """Create CrewAI agent with nuclei tool."""
         return Agent(
-            role="OSINT Analyst",
-            goal="Perform OSINT operations using nuclei",
-            backstory="You are an expert OSINT analyst.",
+            role="Security Analyst",
+            goal="Perform vulnerability scanning using nuclei",
+            backstory="You are an expert security analyst specializing in vulnerability assessment.",
             tools=[NucleiTool()],
             llm=llm,
             verbose=True
@@ -156,9 +157,9 @@ class TestNucleiCrewAI:
         test_domain = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Nuclei",
+            description=f"Scan {test_domain} for vulnerabilities using Nuclei",
             agent=agent,
-            expected_output="Results from nuclei tool"
+            expected_output="Vulnerability scan results from nuclei tool"
         )
         
         crew = Crew(
@@ -171,7 +172,8 @@ class TestNucleiCrewAI:
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None, "CrewAI returned None"
+        # Assertions
+        assert result is not None, "CrewAI returned None"
         
         # Print CrewAI result for verification
         print("\n" + "=" * 80)
@@ -205,7 +207,7 @@ def run_all_tests():
         agent = create_agent(
             model=llm,
             tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for OSINT operations."
+            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for vulnerability scanning."
         )
         # Use a random real domain instead of reserved example.com
         test_domain = get_random_domain()
@@ -213,10 +215,11 @@ def run_all_tests():
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Nuclei")]
+            "messages": [HumanMessage(content=f"Scan {test_domain} for vulnerabilities using Nuclei")]
         })
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         assert "messages" in result or "output" in result
         
         # Save LangChain agent result
@@ -245,9 +248,9 @@ def run_all_tests():
         llm = get_crewai_llm_from_env()
         # Create agent directly (not using pytest fixtures)
         agent = Agent(
-            role="OSINT Analyst",
-            goal="Perform OSINT operations using nuclei",
-            backstory="You are an expert OSINT analyst.",
+            role="Security Analyst",
+            goal="Perform vulnerability scanning using nuclei",
+            backstory="You are an expert security analyst specializing in vulnerability assessment.",
             tools=[NucleiTool()],
             llm=llm,
             verbose=True
@@ -256,9 +259,9 @@ def run_all_tests():
         test_domain = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Nuclei",
+            description=f"Scan {test_domain} for vulnerabilities using Nuclei",
             agent=agent,
-            expected_output="Results from nuclei tool"
+            expected_output="Vulnerability scan results from nuclei tool"
         )
         
         crew = Crew(
@@ -271,7 +274,8 @@ def run_all_tests():
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         
         # Save CrewAI agent result
         try:
