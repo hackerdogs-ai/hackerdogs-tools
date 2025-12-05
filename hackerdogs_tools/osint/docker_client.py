@@ -27,7 +27,11 @@ class DockerOSINTClient:
     - Tool execution
     - Output parsing
     - Error handling
-    - Container cleanup (optional)
+    
+    Container Lifecycle:
+    - By default, containers are PERSISTENT (reused for performance)
+    - Use cleanup() to stop and remove containers
+    - Official Docker images (subfinder, nuclei) auto-cleanup with --rm
     """
     
     def __init__(
@@ -310,6 +314,76 @@ class DockerOSINTClient:
                 "execution_time": execution_time
             }
     
+    def stop_container(self) -> bool:
+        """Stop the container."""
+        if not self.docker_available:
+            return False
+        
+        if not self._container_running():
+            safe_log_info(logger, f"[DockerOSINTClient] Container not running: {self.container_name}")
+            return True
+        
+        try:
+            result = subprocess.run(
+                [self.docker_runtime, "stop", self.container_name],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False
+            )
+            
+            if result.returncode == 0:
+                safe_log_info(logger, f"[DockerOSINTClient] Container stopped: {self.container_name}")
+                return True
+            else:
+                safe_log_error(logger, f"[DockerOSINTClient] Failed to stop container: {result.stderr}")
+                return False
+        except Exception as e:
+            safe_log_error(logger, f"[DockerOSINTClient] Error stopping container: {str(e)}", exc_info=True)
+            return False
+    
+    def remove_container(self) -> bool:
+        """Remove the container (must be stopped first)."""
+        if not self.docker_available:
+            return False
+        
+        if self._container_running():
+            safe_log_error(logger, f"[DockerOSINTClient] Cannot remove running container. Stop it first: {self.container_name}")
+            return False
+        
+        if not self._container_exists():
+            safe_log_info(logger, f"[DockerOSINTClient] Container does not exist: {self.container_name}")
+            return True
+        
+        try:
+            result = subprocess.run(
+                [self.docker_runtime, "rm", self.container_name],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False
+            )
+            
+            if result.returncode == 0:
+                safe_log_info(logger, f"[DockerOSINTClient] Container removed: {self.container_name}")
+                return True
+            else:
+                safe_log_error(logger, f"[DockerOSINTClient] Failed to remove container: {result.stderr}")
+                return False
+        except Exception as e:
+            safe_log_error(logger, f"[DockerOSINTClient] Error removing container: {str(e)}", exc_info=True)
+            return False
+    
+    def cleanup(self) -> bool:
+        """Stop and remove the container (full cleanup)."""
+        if not self.docker_available:
+            return False
+        
+        stopped = self.stop_container()
+        if stopped:
+            return self.remove_container()
+        return False
+    
     def test(self) -> Dict[str, Any]:
         """Test Docker setup by running a simple command."""
         result = self.execute("echo", ["test"], timeout=5)
@@ -336,7 +410,8 @@ def get_docker_client() -> Optional[DockerOSINTClient]:
 def execute_in_docker(
     tool: str,
     args: List[str],
-    timeout: int = 300
+    timeout: int = 300,
+    volumes: Optional[List[str]] = None
 ) -> Dict[str, Any]:
     """
     Convenience function to execute a tool in Docker.
@@ -347,12 +422,13 @@ def execute_in_docker(
     Official images supported:
     - subfinder: projectdiscovery/subfinder:latest
     - nuclei: projectdiscovery/nuclei:latest
-    - (add more as needed)
+    - amass: owaspamass/amass:latest (Official OWASP Amass image)
     
     Args:
         tool: Tool name
         args: Tool arguments
         timeout: Execution timeout
+        volumes: Optional list of volume mounts (format: "host_path:container_path")
     
     Returns:
         Execution result dictionary
@@ -361,11 +437,12 @@ def execute_in_docker(
     official_images = {
         "subfinder": "projectdiscovery/subfinder:latest",
         "nuclei": "projectdiscovery/nuclei:latest",
+        "amass": "owaspamass/amass:latest",  # Official OWASP Amass image
     }
     
     # Try official image first if available
     if tool in official_images:
-        return execute_official_docker_image(official_images[tool], args, timeout=timeout)
+        return execute_official_docker_image(official_images[tool], args, timeout=timeout, volumes=volumes)
     
     # Fall back to custom container
     client = get_docker_client()

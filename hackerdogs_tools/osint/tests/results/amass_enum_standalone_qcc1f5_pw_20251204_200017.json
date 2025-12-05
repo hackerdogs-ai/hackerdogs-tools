@@ -1,0 +1,19 @@
+{
+  "tool": "amass_enum",
+  "test_type": "standalone",
+  "timestamp": "20251204_200017",
+  "domain": "qcc1f5.pw",
+  "result": {
+    "status": "success",
+    "domain": "qcc1f5.pw",
+    "subdomains": [
+      "qcc1f5.pw"
+    ],
+    "ip_addresses": [],
+    "subdomain_count": 1,
+    "ip_count": 0,
+    "sources": {},
+    "execution_method": "official_docker_image",
+    "user_id": "test_user"
+  }
+}

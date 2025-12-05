@@ -1,0 +1,13 @@
+{
+  "tool": "amass_viz",
+  "test_type": "crewai",
+  "timestamp": "20251205_000141",
+  "domain": "allegrolokalnie.pl-93441412.icu",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "{\n  \"nodes\": [],\n  \"edges\": [],\n  \"metadata\": {\n    \"domain\": \"allegrolokalnie.pl-93441412.icu\",\n    \"format\": \"json\",\n    \"output_dir\": \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass\"\n  }\n}",
+    "domain": "allegrolokalnie.pl-93441412.icu",
+    "tool": "amass_viz"
+  }
+}

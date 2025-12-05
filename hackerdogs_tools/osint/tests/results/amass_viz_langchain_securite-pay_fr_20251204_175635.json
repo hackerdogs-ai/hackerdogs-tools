@@ -1,0 +1,31 @@
+{
+  "tool": "amass_viz",
+  "test_type": "langchain",
+  "timestamp": "20251204_175635",
+  "domain": "securite-pay.fr",
+  "result": {
+    "status": "success",
+    "agent_type": "langchain",
+    "result": "{'messages': [HumanMessage(content='Create D3 visualization for securite-pay.fr using Amass Viz', additional_kwargs={}, response_metadata={}, id='91f7f629-6e7b-4d22-ad32-862290283ec4'), AIMessage(content='', additional_kwargs={}, response_metadata={'model': 'qwen3-coder:latest', 'created_at': '2025-12-05T01:56:30.873554Z', 'done': True, 'done_reason': 'stop', 'total_duration': 1698902125, 'load_duration': 61361958, 'prompt_eval_count': 604, 'prompt_eval_duration': 964002458, 'eval_count': 39, 'eval_duration': 663111747, 'logprobs': None, 'model_name': 'qwen3-coder:latest', 'model_provider': 'ollama'}, id='lc_run--f9f1dc48-9463-46de-822e-e12ce41e9fc0-0', tool_calls=[{'name': 'amass_viz', 'args': {'domain': 'securite-pay.fr', 'format': 'd3'}, 'id': '83bd9af0-f765-4608-9d3f-6c3b5306d35e', 'type': 'tool_call'}], usage_metadata={'input_tokens': 604, 'output_tokens': 39, 'total_tokens': 643}), ToolMessage(content='{\\n  \"status\": \"success\",\\n  \"domain\": \"securite-pay.fr\",\\n  \"format\": \"d3\",\\n  \"graph\": {\\n    \"nodes\": [],\\n    \"edges\": [],\\n    \"metadata\": {\\n      \"domain\": \"securite-pay.fr\",\\n      \"format\": \"d3\",\\n      \"output_dir\": \"/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_7ny5m1vr\"\\n    }\\n  },\\n  \"output_files\": [\\n    \"/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_7ny5m1vr/amass.html\"\\n  ],\\n  \"node_count\": 0,\\n  \"edge_count\": 0,\\n  \"execution_method\": \"official_docker_image\",\\n  \"user_id\": \"\"\\n}', name='amass_viz', id='5a19d23b-8c7b-433b-b6a0-bd94a86eda7e', tool_call_id='83bd9af0-f765-4608-9d3f-6c3b5306d35e'), AIMessage(content='I\\'ve created a D3 visualization for the domain \"securite-pay.fr\" using Amass Viz. However, the graph contains no nodes or edges, which suggests that either:\\n\\n1. No subdomains or assets were discovered for this domain\\n2. The enumeration didn\\'t find any relationships between assets\\n3. There might be a limitation with the specific domain\\n\\nThe visualization was generated successfully and is available at:\\",
+    "messages": [
+      {
+        "type": "HumanMessage",
+        "content": "Create D3 visualization for securite-pay.fr using Amass Viz"
+      },
+      {
+        "type": "AIMessage",
+        "content": ""
+      },
+      {
+        "type": "ToolMessage",
+        "content": "{\n  \"status\": \"success\",\n  \"domain\": \"securite-pay.fr\",\n  \"format\": \"d3\",\n  \"graph\": {\n    \"nodes\": [],\n    \"edges\": [],\n    \"metadata\": {\n      \"domain\": \"securite-pay.fr\",\n      \"format\": \"d3\",\n      \"output_dir\": \"/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_7ny5m1vr\"\n    }\n  },\n  \"output_files\": [\n    \"/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_7ny5m1vr/amass.html\"\n  ],\n  \"node_count\": 0,\n  \"edge_count\": 0,\n  \"execution_method\": \"official_docker_image\",\n  \"user_id\": \"\"\n}"
+      },
+      {
+        "type": "AIMessage",
+        "content": "I've created a D3 visualization for the domain \"securite-pay.fr\" using Amass Viz. However, the graph contains no nodes or edges, which suggests that either:\n\n1. No subdomains or assets were discovered for this domain\n2. The enumeration didn't find any relationships between assets\n3. There might be a limitation with the specific domain\n\nThe visualization was generated successfully and is available at:\n/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_7ny5m1vr/amass.html\n\nWould you like me to:\n- Try a different format for the visualization\n- Run a more extensive enumeration\n- Analyze a different domain\n- Provide additional information about the domain's attack surface\n- Check for any specific subdomains or assets manually?"
+      }
+    ],
+    "messages_count": 4,
+    "tool": "amass_viz"
+  }
+}

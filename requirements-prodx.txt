@@ -1,0 +1,34 @@
+# Optional Dependencies for Productivity Tools (prodx)
+# Install with: pip install -r requirements-prodx.txt
+#
+# Note: Some packages may already be in main dependencies (pyproject.toml)
+# This file lists ALL prodx dependencies for convenience
+
+# PowerPoint Operations (3 tools)
+python-pptx>=0.6.21
+
+# Streamlit (for visualization and file operations)
+streamlit>=1.28.0
+
+# Excel Operations (4 tools)
+# Note: openpyxl and pandas are usually in main deps, but listed here for completeness
+openpyxl>=3.1.5
+pandas>=2.3.3
+
+# Visualization Tools (2 tools)
+# Note: plotly is usually in main deps, but listed here for completeness
+plotly>=6.5.0
+
+# OCR Tools (3 tools)
+pytesseract>=0.3.13
+easyocr>=1.7.2
+pdf2image>=1.17.0
+# Note: Pillow (PIL) is usually in main deps
+# Note: opencv-python is usually in main deps
+
+# Document Processing
+python-docx>=1.2.0
+
+# System Dependencies (NOT installable via pip - install separately):
+# - Tesseract OCR: brew install tesseract (macOS) or apt-get install tesseract-ocr (Linux)
+# - Poppler: brew install poppler (macOS) or apt-get install poppler-utils (Linux)

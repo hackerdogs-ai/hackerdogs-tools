@@ -120,7 +120,31 @@ class TestNucleiLangChain:
         # Assertions
         assert result is not None, "Agent returned None"
         assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
+        # Save LangChain agent result
+        try:
+            # Extract messages for better visibility
+            messages_data = []
+            if isinstance(result, dict) and "messages" in result:
+                for msg in result["messages"]:
+                    messages_data.append({
+                        "type": msg.__class__.__name__,
+                        "content": str(msg.content)[:500] if hasattr(msg, 'content') else str(msg)[:500]
+                    })
+            
+            result_data = {
+                "status": "success",
+                "agent_type": "langchain",
+                "result": str(result)[:1000] if result else None,
+                "messages": messages_data,
+                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "domain": test_domain
+            }
+            result_file = save_test_result("nuclei", "langchain", result_data, test_domain)
+            print(f"📁 LangChain result saved to: {result_file}")
+        except Exception as e:
+            print(f"⚠️  Could not save LangChain result: {e}")
         
+                
         # Print agent result for verification
         print("\n" + "=" * 80)
         print("LANGCHAIN AGENT RESULT:")
@@ -172,8 +196,7 @@ class TestNucleiCrewAI:
         # Execute task
         result = crew.kickoff()
         
-        # Assertions
-        assert result is not None, "CrewAI returned None"
+        # Assertions        assert result is not None, "CrewAI returned None"
         
         # Print CrewAI result for verification
         print("\n" + "=" * 80)

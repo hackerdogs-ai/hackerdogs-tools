@@ -1,0 +1,10 @@
+{
+  "tool": "amass_intel",
+  "test_type": "standalone",
+  "timestamp": "20251204_200035",
+  "domain": "asn_13374",
+  "result": {
+    "status": "error",
+    "message": "Amass intel enum failed: Configuration error: No root domain names were provided\n"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "tool": "subfinder",
+  "test_type": "standalone",
+  "timestamp": "20251204_114319",
+  "domain": "paiementaideurgent.fr",
+  "result": {
+    "status": "success",
+    "domain": "paiementaideurgent.fr",
+    "subdomains": [
+      "www.paiementaideurgent.fr"
+    ],
+    "count": 1,
+    "execution_method": "official_docker_image",
+    "user_id": "test_user"
+  }
+}

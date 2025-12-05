@@ -1,0 +1,13 @@
+{
+  "tool": "amass_viz",
+  "test_type": "crewai",
+  "timestamp": "20251204_202117",
+  "domain": "wordpress.zzna",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "{\n  \"nodes\": [],\n  \"edges\": [],\n  \"metadata\": {\n    \"domain\": \"wordpress.zzna\",\n    \"format\": \"json\",\n    \"output_dir\": \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass\"\n  }\n}",
+    "domain": "wordpress.zzna",
+    "tool": "amass_viz"
+  }
+}

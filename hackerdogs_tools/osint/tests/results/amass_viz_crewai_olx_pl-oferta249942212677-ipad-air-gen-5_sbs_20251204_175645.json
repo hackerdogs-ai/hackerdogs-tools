@@ -1,0 +1,12 @@
+{
+  "tool": "amass_viz",
+  "test_type": "crewai",
+  "timestamp": "20251204_175645",
+  "domain": "olx.pl-oferta249942212677-ipad-air-gen-5.sbs",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "{\n  \"status\": \"success\",\n  \"domain\": \"olx.pl-oferta249942212677-ipad-air-gen-5.sbs\",\n  \"format\": \"d3\",\n  \"graph\": {\n    \"nodes\": [],\n    \"edges\": [],\n    \"metadata\": {\n      \"domain\": \"olx.pl-oferta249942212677-ipad-air-gen-5.sbs\",\n      \"format\": \"d3\",\n      \"output_dir\": \"/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_f09nnjmp\"\n    }\n  },\n  \"output_files\": [\n    \"/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz_f09nnjmp/amass.html\"\n  ],\n  \"node_count\": 0,\n  \"edge_count\": 0,\n  \"execution_method\": \"official_docker_image\"\n}",
+    "tool": "amass_viz"
+  }
+}

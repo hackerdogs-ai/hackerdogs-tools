@@ -5,9 +5,7 @@ LangChain tools for extracting text from images and documents using OCR.
 """
 
 import warnings
-# Suppress PyPDF2 deprecation warnings
-warnings.filterwarnings('ignore', category=DeprecationWarning, message='.*PyPDF2.*')
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='PyPDF2')
+# Note: We now use pypdf instead of deprecated PyPDF2, so no need to suppress warnings
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -65,12 +63,12 @@ except ImportError:
     logger.warning("opencv-python not available. Image preprocessing may be limited.")
 
 try:
-    import PyPDF2
+    import pypdf  # Use pypdf instead of deprecated PyPDF2
     from pdf2image import convert_from_bytes
     PDF_AVAILABLE = True
 except ImportError:
     PDF_AVAILABLE = False
-    logger.warning("PyPDF2/pdf2image not available. PDF OCR will not work.")
+    logger.warning("pypdf/pdf2image not available. PDF OCR will not work.")
 
 
 def _decode_image_input(image_input: str) -> Image.Image:
@@ -518,7 +516,7 @@ class ExtractTextFromPDFImagesTool(BaseTool):
             No exceptions are raised - all errors are caught and returned as error message strings.
         """
         if not PDF_AVAILABLE:
-            return "Error: PyPDF2 and pdf2image libraries are not installed. Please install them with: pip install PyPDF2 pdf2image"
+            return "Error: pypdf and pdf2image libraries are not installed. Please install them with: pip install pypdf pdf2image"
         
         if not PIL_AVAILABLE:
             return "Error: PIL/Pillow library is not installed."
@@ -687,7 +685,7 @@ class AnalyzeDocumentStructureTool(BaseTool):
     4. "Analyze this image document and extract all text with bounding boxes"
     
     **Configuration:**
-    Requires appropriate libraries for each file type (PyPDF2, python-docx, PIL, OCR tools).
+    Requires appropriate libraries for each file type (pypdf, python-docx, PIL, OCR tools).
     The tool automatically detects file type and applies appropriate extraction methods.
     OCR from images uses ExtractTextFromImageTool when include_images=True.
     """
@@ -757,11 +755,11 @@ class AnalyzeDocumentStructureTool(BaseTool):
             # Handle different file types
             if file_type.lower() == "pdf":
                 if not PDF_AVAILABLE:
-                    return "Error: PyPDF2 required for PDF files"
+                    return "Error: pypdf required for PDF files"
                 
                 try:
                     pdf_bytes = base64.b64decode(file_path) if len(file_path) > 100 else open(file_path, 'rb').read()
-                    pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+                    pdf_reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
                     
                     result["metadata"]["pages"] = len(pdf_reader.pages)
                     

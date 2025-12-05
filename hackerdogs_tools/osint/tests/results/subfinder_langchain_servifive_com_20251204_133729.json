@@ -1,0 +1,31 @@
+{
+  "tool": "subfinder",
+  "test_type": "langchain",
+  "timestamp": "20251204_133729",
+  "domain": "servifive.com",
+  "result": {
+    "status": "success",
+    "agent_type": "langchain",
+    "result": "{'messages': [HumanMessage(content='Find subdomains for servifive.com using Subfinder', additional_kwargs={}, response_metadata={}, id='2baa5327-c8d5-45ca-a172-2a58f0342251'), AIMessage(content='', additional_kwargs={}, response_metadata={'model': 'qwen3-coder:latest', 'created_at': '2025-12-04T21:37:09.569968Z', 'done': True, 'done_reason': 'stop', 'total_duration': 5269002500, 'load_duration': 3273284541, 'prompt_eval_count': 835, 'prompt_eval_duration': 1503178125, 'eval_count': 26, 'eval_duration': 444708791, 'logprobs': None, 'model_name': 'qwen3-coder:latest', 'model_provider': 'ollama'}, id='lc_run--11c6b41f-9b1c-43a7-9035-7b886b49a130-0', tool_calls=[{'name': 'subfinder_enum', 'args': {'domain': 'servifive.com'}, 'id': '0bf30327-db21-4dab-9e90-448f3cafcc1d', 'type': 'tool_call'}], usage_metadata={'input_tokens': 835, 'output_tokens': 26, 'total_tokens': 861}), ToolMessage(content='{\\n  \"status\": \"success\",\\n  \"domain\": \"servifive.com\",\\n  \"subdomains\": [\\n    \"www.servifive.com",
+    "messages": [
+      {
+        "type": "HumanMessage",
+        "content": "Find subdomains for servifive.com using Subfinder"
+      },
+      {
+        "type": "AIMessage",
+        "content": ""
+      },
+      {
+        "type": "ToolMessage",
+        "content": "{\n  \"status\": \"success\",\n  \"domain\": \"servifive.com\",\n  \"subdomains\": [\n    \"www.servifive.com\"\n  ],\n  \"count\": 1,\n  \"execution_method\": \"official_docker_image\",\n  \"user_id\": \"\"\n}"
+      },
+      {
+        "type": "AIMessage",
+        "content": "The subdomain enumeration for `servifive.com` using Subfinder has completed successfully. Here are the results:\n\n- **Domain**: servifive.com\n- **Subdomains Found**:\n  - www.servifive.com\n- **Total Count**: 1\n\nOnly one subdomain was found. If you need further analysis or wish to use different sources or options, let me know!"
+      }
+    ],
+    "messages_count": 4,
+    "domain": "servifive.com"
+  }
+}

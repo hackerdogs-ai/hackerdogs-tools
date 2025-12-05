@@ -1,0 +1,78 @@
+# Subfinder Flag Configuration
+# Location: $CONFIG/subfinder/config.yaml
+# 
+# This file stores default flag values for Subfinder.
+# You can override these with command-line flags.
+#
+# Reference: https://docs.projectdiscovery.io/opensource/subfinder/install#post-install-configuration
+
+# Default timeout in seconds
+timeout: 30
+
+# Maximum time in minutes to wait for enumeration results
+max-time: 10
+
+# Rate limit: maximum HTTP requests per second (global)
+rate-limit: 10
+
+# Rate limits per provider (key=value format)
+# Format: provider=rate/unit (e.g., "github=30/m" = 30 per minute, "shodan=1/s" = 1 per second)
+rate-limits:
+  - "github=30/m"
+  - "fullhunt=60/m"
+  - "pugrecon=10/s"
+  - "robtex=18446744073709551615/ms"  # Effectively unlimited
+  - "securitytrails=1/s"
+  - "shodan=1/s"
+  - "virustotal=4/m"
+  - "hackertarget=2/s"
+  - "waybackarchive=15/m"
+  - "whoisxmlapi=50/s"
+  - "sitedossier=8/m"
+  - "netlas=1/s"
+  - "hudsonrock=5/s"
+
+# Number of concurrent goroutines for DNS resolution (active mode only)
+threads: 10
+
+# Default output format
+# Options: json, text
+output-format: json
+
+# Silent mode: show only subdomains in output
+silent: true
+
+# Active mode: display active subdomains only (requires DNS resolution)
+active: false
+
+# Include host IP in output (active mode only)
+include-ip: false
+
+# Collect sources: include all sources in JSON output
+collect-sources: false
+
+# Recursive: use only sources that can handle subdomains recursively
+recursive: false
+
+# Use all sources for enumeration (slow but comprehensive)
+all-sources: false
+
+# Custom resolvers (comma-separated list)
+# Example: ["8.8.8.8", "1.1.1.1", "9.9.9.9"]
+resolvers: []
+
+# Exclude IPs from the list of domains
+exclude-ip: false
+
+# HTTP proxy to use with subfinder
+# proxy: "http://proxy.example.com:8080"
+
+# Verbose output
+verbose: false
+
+# Disable color in output
+no-color: false
+
+# Disable automatic update check
+disable-update-check: false
+
