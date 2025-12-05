@@ -65,6 +65,84 @@ class TestNucleiStandalone:
         result_file = save_test_result("nuclei", "standalone", result_data, test_domain)
         print(f"📁 JSON result saved to: {result_file}")
         
+        # Assertions
+        assert "status" in result_data, f"Missing 'status' in result: {result_data}"
+        assert result_data["status"] in ["success", "error"], f"Invalid status: {result_data.get('status')}"
+        
+        if result_data["status"] == "success":
+            assert "execution_method" in result_data, f"Missing 'execution_method' in result: {result_data}"
+            # Tool can return "docker" or "official_docker_image" depending on execution method
+            assert result_data["execution_method"] in ["docker", "official_docker_image"], \
+                f"Invalid execution_method: {result_data.get('execution_method')}"
+            assert "target" in result_data, f"Missing 'target' in result: {result_data}"
+            assert "findings" in result_data, f"Missing 'findings' in result: {result_data}"
+            assert isinstance(result_data["findings"], list), f"findings must be a list: {type(result_data.get('findings'))}"
+            print(f"✅ Tool executed successfully")
+            print(f"   Target: {result_data.get('target')}")
+            print(f"   Findings found: {result_data.get('count', 0)}")
+            print(f"   Execution method: {result_data.get('execution_method')}")
+        else:
+            # If error, should have message
+            assert "message" in result_data, f"Error status but no message: {result_data}"
+            print(f"⚠️  Tool returned error: {result_data.get('message')}")
+
+
+class TestNucleiLangChain:
+    """Test nuclei tool with LangChain agent."""
+    
+    @pytest.fixture
+    def llm(self):
+        """Get LLM from environment."""
+        return get_llm_from_env()
+    
+    @pytest.fixture
+    def agent(self, llm):
+        """Create LangChain agent with nuclei tool."""
+        tools = [nuclei_scan]
+        agent = create_agent(
+            model=llm,
+            tools=tools,
+            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for vulnerability scanning."
+        )
+        return agent
+    
+    def test_nuclei_langchain_agent(self, agent):
+        """Test nuclei tool with LangChain agent."""
+        # Use a random real domain instead of reserved example.com
+        test_domain = get_random_domain()
+        
+        # Execute query directly (agent is a runnable in LangChain 1.x)
+        # ToolRuntime is automatically injected by the agent
+        result = agent.invoke({
+            "messages": [HumanMessage(content=f"Scan {test_domain} for vulnerabilities using Nuclei")]
+        })
+        
+        # Assertions
+        assert result is not None, "Agent returned None"
+        assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
+        # Save LangChain agent result
+        try:
+            # Extract messages for better visibility
+            messages_data = []
+            if isinstance(result, dict) and "messages" in result:
+                for msg in result["messages"]:
+                    messages_data.append({
+                        "type": msg.__class__.__name__,
+                        "content": str(msg.content)[:500] if hasattr(msg, 'content') else str(msg)[:500]
+                    })
+            
+            result_data = {
+                "status": "success",
+                "agent_type": "langchain",
+                "result": str(result)[:1000] if result else None,
+                "messages": messages_data,
+                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "domain": test_domain
+            }
+            result_file = save_test_result("nuclei", "langchain", result_data, test_domain)
+            print(f"📁 LangChain result saved to: {result_file}")
+        except Exception as e:
+            print(f"⚠️  Could not save LangChain result: {e}")
                 
         # Print agent result for verification
         print("\n" + "=" * 80)
@@ -88,9 +166,9 @@ class TestNucleiCrewAI:
     def agent(self, llm):
         """Create CrewAI agent with nuclei tool."""
         return Agent(
-            role="OSINT Analyst",
-            goal="Perform OSINT operations using nuclei",
-            backstory="You are an expert OSINT analyst.",
+            role="Security Analyst",
+            goal="Perform vulnerability scanning using nuclei",
+            backstory="You are an expert security analyst specializing in vulnerability assessment.",
             tools=[NucleiTool()],
             llm=llm,
             verbose=True
@@ -102,9 +180,9 @@ class TestNucleiCrewAI:
         test_domain = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Nuclei",
+            description=f"Scan {test_domain} for vulnerabilities using Nuclei",
             agent=agent,
-            expected_output="Results from nuclei tool"
+            expected_output="Vulnerability scan results from nuclei tool"
         )
         
         crew = Crew(
@@ -132,7 +210,6 @@ class TestNucleiCrewAI:
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
         
-                
         # Print CrewAI result for verification
         print("\n" + "=" * 80)
         print("CREWAI AGENT RESULT:")
@@ -165,7 +242,7 @@ def run_all_tests():
         agent = create_agent(
             model=llm,
             tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for OSINT operations."
+            system_prompt="You are a cybersecurity analyst. Use the nuclei tool for vulnerability scanning."
         )
         # Use a random real domain instead of reserved example.com
         test_domain = get_random_domain()
@@ -173,10 +250,11 @@ def run_all_tests():
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Nuclei")]
+            "messages": [HumanMessage(content=f"Scan {test_domain} for vulnerabilities using Nuclei")]
         })
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         assert "messages" in result or "output" in result
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
@@ -204,9 +282,9 @@ def run_all_tests():
         llm = get_crewai_llm_from_env()
         # Create agent directly (not using pytest fixtures)
         agent = Agent(
-            role="OSINT Analyst",
-            goal="Perform OSINT operations using nuclei",
-            backstory="You are an expert OSINT analyst.",
+            role="Security Analyst",
+            goal="Perform vulnerability scanning using nuclei",
+            backstory="You are an expert security analyst specializing in vulnerability assessment.",
             tools=[NucleiTool()],
             llm=llm,
             verbose=True
@@ -215,9 +293,9 @@ def run_all_tests():
         test_domain = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Nuclei",
+            description=f"Scan {test_domain} for vulnerabilities using Nuclei",
             agent=agent,
-            expected_output="Results from nuclei tool"
+            expected_output="Vulnerability scan results from nuclei tool"
         )
         
         crew = Crew(
@@ -230,7 +308,8 @@ def run_all_tests():
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         
         # Save CrewAI agent result
         try:
