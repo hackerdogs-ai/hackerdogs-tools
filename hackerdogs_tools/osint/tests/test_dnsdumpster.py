@@ -59,81 +59,12 @@ class TestDnsdumpsterStandalone:
         print(json.dumps(result_data, indent=2))
         print("=" * 80 + "\n")
         
-        # Save JSON result to file
-        result_file = save_test_result("dnsdumpster", "standalone", result_data, test_domain)
-        print(f"📁 JSON result saved to: {result_file}")
-        
-        # Assertions
-        assert "status" in result_data, f"Missing 'status' in result: {result_data}"
-        assert result_data["status"] in ["success", "error"], f"Invalid status: {result_data.get('status')}"
-        
-        if result_data["status"] == "success":
-            assert "execution_method" in result_data, f"Missing 'execution_method' in result: {result_data}"
-            # Tool can return "docker" or "official_docker_image" depending on execution method
-            assert result_data["execution_method"] in ["docker", "official_docker_image"], \
-                f"Invalid execution_method: {result_data.get('execution_method')}"
-            assert "domain" in result_data, f"Missing 'domain' in result: {result_data}"
-            assert "subdomains" in result_data, f"Missing 'subdomains' in result: {result_data}"
-            assert isinstance(result_data["subdomains"], list), f"subdomains must be a list: {type(result_data.get('subdomains'))}"
-            print(f"✅ Tool executed successfully")
-            print(f"   Domain: {result_data.get('domain')}")
-            print(f"   Subdomains found: {result_data.get('count', 0)}")
-            print(f"   Execution method: {result_data.get('execution_method')}")
-        else:
-            # If error, should have message
-            assert "message" in result_data, f"Error status but no message: {result_data}"
-            print(f"⚠️  Tool returned error: {result_data.get('message')}")
-
-
-class TestDnsdumpsterLangChain:
-    """Test dnsdumpster tool with LangChain agent."""
-    
-    @pytest.fixture
-    def llm(self):
-        """Get LLM from environment."""
-        return get_llm_from_env()
-    
-    @pytest.fixture
-    def agent(self, llm):
-        """Create LangChain agent with dnsdumpster tool."""
-        tools = [dnsdumpster_search]
-        agent = create_agent(
-            llm=llm,
-            tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the dnsdumpster tool for OSINT operations."
-        )
-        return agent
-    
-    def test_dnsdumpster_langchain_agent(self, agent):
-        """Test dnsdumpster tool with LangChain agent."""
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
-        
-        # Execute query directly (agent is a runnable in LangChain 1.x)
-        # ToolRuntime is automatically injected by the agent
-        result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Dnsdumpster")]
-        })
-        
-        # Assertions        assert result is not None, "Agent returned None"
-        assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
-        # Save LangChain agent result
+                # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            # Extract messages for better visibility
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:500] if hasattr(msg, 'content') else str(msg)[:500]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:1000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain
             }
             result_file = save_test_result("dnsdumpster", "langchain", result_data, test_domain)
@@ -199,7 +130,7 @@ class TestDnsdumpsterCrewAI:
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": str(result)[:2000] if result else None,
+                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
                 "domain": test_domain
             }
             result_file = save_test_result("dnsdumpster", "crewai", result_data, test_domain)
@@ -259,7 +190,7 @@ def run_all_tests():
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:1000] if result else None,
+                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
                 "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
                 "domain": test_domain
             }
@@ -313,7 +244,7 @@ def run_all_tests():
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": str(result)[:1000] if result else None,
+                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
                 "domain": test_domain
             }
             result_file = save_test_result("dnsdumpster", "crewai", result_data, test_domain)

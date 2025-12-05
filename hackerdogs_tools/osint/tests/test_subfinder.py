@@ -190,18 +190,21 @@ class TestSubfinderCrewAI:
         
         # Assertions        assert result is not None, "CrewAI returned None"
         
-        # Save CrewAI agent result
+        # Save CrewAI agent result - complete result as-is
         try:
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": str(result)[:1000] if result else None,
+                "result": serialize_crewai_result(result) if result else None,
                 "domain": test_domain
             }
             result_file = save_test_result("subfinder", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
+            import traceback
+            traceback.print_exc()
         
         # Print CrewAI result for verification
         print("\n" + "=" * 80)
