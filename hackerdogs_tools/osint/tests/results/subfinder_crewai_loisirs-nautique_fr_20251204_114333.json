@@ -1,0 +1,12 @@
+{
+  "tool": "subfinder",
+  "test_type": "crewai",
+  "timestamp": "20251204_114333",
+  "domain": "loisirs-nautique.fr",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "ww16.loisirs-nautique.fr",
+    "domain": "loisirs-nautique.fr"
+  }
+}

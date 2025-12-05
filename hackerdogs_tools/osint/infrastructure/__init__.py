@@ -8,8 +8,8 @@ This module provides tools for infrastructure reconnaissance including:
 - Information gathering (TheHarvester, DNSDumpster)
 """
 
-from .amass_langchain import amass_enum
-from .amass_crewai import AmassTool
+from .amass_langchain import amass_intel, amass_enum, amass_viz, amass_track
+from .amass_crewai import AmassIntelTool, AmassEnumTool, AmassVizTool, AmassTrackTool
 from .nuclei_langchain import nuclei_scan
 from .nuclei_crewai import NucleiTool
 from .subfinder_langchain import subfinder_enum
@@ -24,16 +24,24 @@ from .dnsdumpster_langchain import dnsdumpster_search
 from .dnsdumpster_crewai import DNSDumpsterTool
 
 __all__ = [
-    # LangChain tools
+    # LangChain tools - Amass
+    "amass_intel",
     "amass_enum",
+    "amass_viz",
+    "amass_track",
+    # LangChain tools - Other
     "nuclei_scan",
     "subfinder_enum",
     "masscan_scan",
     "zmap_scan",
     "theharvester_search",
     "dnsdumpster_search",
-    # CrewAI tools
-    "AmassTool",
+    # CrewAI tools - Amass
+    "AmassIntelTool",
+    "AmassEnumTool",
+    "AmassVizTool",
+    "AmassTrackTool",
+    # CrewAI tools - Other
     "NucleiTool",
     "SubfinderTool",
     "MasscanTool",

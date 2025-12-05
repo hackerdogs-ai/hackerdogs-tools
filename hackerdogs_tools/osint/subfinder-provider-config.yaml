@@ -1,0 +1,239 @@
+# Subfinder Provider Configuration
+# Location: ~/.config/subfinder/provider-config.yaml
+# 
+# This file contains API keys for all supported Subfinder sources.
+# Sources marked with * require API keys to function.
+#
+# To use this config:
+# 1. Copy this file to ~/.config/subfinder/provider-config.yaml
+# 2. Replace YOUR_API_KEY placeholders with actual API keys
+# 3. For composite keys (Censys, PassiveTotal, Fofa, Intelx, ZoomEye, Facebook), use format: KEY1:KEY2
+#
+# Free API Key Sources:
+# - BinaryEdge: https://app.binaryedge.io/account/api
+# - Censys: https://censys.io/account/api
+# - Certspotter: https://sslmate.com/account/api_credentials
+# - GitHub: https://github.com/settings/tokens
+# - Shodan: https://account.shodan.io/
+# - SecurityTrails: https://securitytrails.com/app/api
+# - VirusTotal: https://www.virustotal.com/gui/join-us
+# - ZoomEye: https://www.zoomeye.org/user/api
+#
+# Reference: https://docs.projectdiscovery.io/opensource/subfinder/install#post-install-configuration
+
+# AlienVault OTX (Open Threat Exchange)
+# Get API key: https://otx.alienvault.com/api
+alienvault:
+  - c49c0cf9ea1382f79c2bcb13dabe7ec4ddf652e0eb32c372adb53e333eeb4c2b
+
+# Anubis (no API key required - free source)
+# anubis: []  # No key needed
+
+# BeVigil API
+# Get API key: https://bevigil.com/
+bevigil:
+  - O4FUXk0pJOJg7kZI
+
+# BinaryEdge API
+# Get API key: https://app.binaryedge.io/account/api
+binaryedge:
+  - YOUR_BINARYEDGE_API_KEY
+
+# BufferOver API
+# Get API key: https://dns.bufferover.run/
+bufferover:
+  - YOUR_BUFFEROVER_API_KEY
+
+# C99 API
+# Get API key: https://api.c99.nl/
+c99:
+  - YOUR_C99_API_KEY
+
+# Censys API (format: API_ID:API_SECRET)
+# Get credentials: https://censys.io/account/api
+censys:
+  - censys_h6aSztnZ_Pa6tREQ5xv3sGuUMq2zvZic8
+
+# CertSpotter API
+# Get API key: https://sslmate.com/account/api_credentials
+certspotter:
+  - k63608_74vMxkpo81T1nxoOEAcZ
+
+# Chaos API (ProjectDiscovery)
+# Get API key: https://chaos.projectdiscovery.io/
+chaos:
+  - 90d7196f-7ddd-4c1b-8e31-3aaa888aeece
+
+# Chinaz API
+# Get API key: https://api.chinaz.com/
+chinaz:
+  - YOUR_CHINAZ_API_KEY
+
+# CommonCrawl (no API key required - free source)
+# commoncrawl: []  # No key needed
+
+# Crt.sh (no API key required - free source)
+# crtsh: []  # No key needed
+
+# Digitorus (no API key required - free source)
+# digitorus: []  # No key needed
+
+# DNSDB API
+# Get API key: https://www.farsightsecurity.com/
+dnsdb:
+  - YOUR_DNSDB_API_KEY
+
+# DNSDumpster API
+# Get API key: https://dnsdumpster.com/
+dnsdumpster:
+  - YOUR_DNSDUMPSTER_API_KEY
+
+# DomainsProject API
+# Get API key: https://domainsproject.org/
+domainsproject:
+  - YOUR_DOMAINSPROJECT_API_KEY
+
+# DNSRepo API
+# Get API key: https://dnsrepo.noc.org/
+dnsrepo:
+  - YOUR_DNSREPO_API_KEY
+
+# DriftNet API
+# Get API key: https://driftnet.io/
+driftnet:
+  - YOUR_DRIFTNET_API_KEY
+
+# FOFA API (format: EMAIL:API_KEY)
+# Get credentials: https://fofa.info/api
+fofa:
+  - YOUR_FOFA_EMAIL:YOUR_FOFA_API_KEY
+
+# FullHunt API
+# Get API key: https://fullhunt.io/
+fullhunt:
+  - 6e63a92c-a4a9-4297-858c-9f3e4a7610af
+
+# GitHub API Token
+# Get token: https://github.com/settings/tokens
+# Create token with 'public_repo' scope
+github:
+  - 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
+
+# HackerTarget (no API key required - free source)
+# hackertarget: []  # No key needed
+
+# Intelx API (format: API_KEY)
+# Get API key: https://intelx.io/
+intelx:
+  - YOUR_INTELX_API_KEY
+
+# Netlas API
+# Get API key: https://app.netlas.io/
+netlas:
+  - YOUR_NETLAS_API_KEY
+
+# Onyphe API
+# Get API key: https://www.onyphe.io/
+onyphe:
+  - YOUR_ONYPHE_API_KEY
+
+# LeakIX API
+# Get API key: https://leakix.net/
+leakix:
+  - YOUR_LEAKIX_API_KEY
+
+# Quake API (360 Quake)
+# Get API key: https://quake.360.cn/
+quake:
+  - YOUR_QUAKE_API_KEY
+
+# PugRecon API
+# Get API key: https://pugrecon.com/
+pugrecon:
+  - YOUR_PUGRECON_API_KEY
+
+# RapidDNS (no API key required - free source)
+# rapiddns: []  # No key needed
+
+# RedHuntLabs API
+# Get API key: https://redhuntlabs.com/
+redhuntlabs:
+  - YOUR_REDHUNTLABS_API_KEY
+
+# Robtex API
+# Get API key: https://www.robtex.com/api/
+robtex:
+  - YOUR_ROBTEX_API_KEY
+
+# RSE Cloud API
+# Get API key: https://rsecloud.com/
+rsecloud:
+  - YOUR_RSECLOUD_API_KEY
+
+# SecurityTrails API
+# Get API key: https://securitytrails.com/app/api
+securitytrails:
+  - UYfwhh5Emqo7jILA_tDqO-15DzUsSEVX
+
+# Shodan API
+# Get API key: https://account.shodan.io/
+shodan:
+  - YOUR_SHODAN_API_KEY
+
+# SiteDossier (no API key required - free source)
+# sitedossier: []  # No key needed
+
+# ThreatBook API
+# Get API key: https://threatbook.cn/
+threatbook:
+  - YOUR_THREATBOOK_API_KEY
+
+# ThreatCrowd (no API key required - free source)
+# threatcrowd: []  # No key needed
+
+# VirusTotal API
+# Get API key: https://www.virustotal.com/gui/join-us
+virustotal:
+  - 123VirusTotal123!
+
+# WaybackArchive (no API key required - free source)
+# waybackarchive: []  # No key needed
+
+# WhoisXML API
+# Get API key: https://whoisxmlapi.com/
+whoisxmlapi:
+  - at_qH2TQ1daX5HARoCC46w013E3KOvnt
+
+# WindVane API
+# Get API key: https://windvane.com/
+windvane:
+  - YOUR_WINDVANE_API_KEY
+
+# ZoomEye API (format: USERNAME:API_KEY)
+# Get credentials: https://www.zoomeye.org/user/api
+zoomeyeapi:
+  - YOUR_ZOOMEYE_USERNAME:YOUR_ZOOMEYE_API_KEY
+
+# Facebook API (format: APP_ID:APP_SECRET)
+# Get credentials: https://developers.facebook.com/
+facebook:
+  - YOUR_FACEBOOK_APP_ID:YOUR_FACEBOOK_APP_SECRET
+
+# BuiltWith API
+# Get API key: https://builtwith.com/
+builtwith:
+  - YOUR_BUILTWITH_API_KEY
+
+# HudsonRock (no API key required - free source)
+# hudsonrock: []  # No key needed
+
+# DigitalYama API
+# Get API key: https://digitalyama.com/
+digitalyama:
+  - YOUR_DIGITALYAMA_API_KEY
+
+# PassiveTotal API (format: USERNAME:API_KEY)
+# Get credentials: https://www.passivetotal.org/
+passivetotal:
+  - YOUR_PASSIVETOTAL_USERNAME:YOUR_PASSIVETOTAL_API_KEY
+

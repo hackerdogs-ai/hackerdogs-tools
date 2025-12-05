@@ -1,0 +1,32 @@
+{
+  "tool": "amass_viz",
+  "test_type": "langchain",
+  "timestamp": "20251204_220555",
+  "domain": "bitfarmsmining-services.top",
+  "result": {
+    "status": "success",
+    "agent_type": "langchain",
+    "result": "{'messages': [HumanMessage(content='Create a D3 visualization graph for bitfarmsmining-services.top using Amass Viz', additional_kwargs={}, response_metadata={}, id='f48f596f-e662-4c69-9f8f-8393f8549332'), AIMessage(content='', additional_kwargs={}, response_metadata={'model': 'qwen3-coder:latest', 'created_at': '2025-12-05T06:05:49.562032Z', 'done': True, 'done_reason': 'stop', 'total_duration': 1273198250, 'load_duration': 61266750, 'prompt_eval_count': 611, 'prompt_eval_duration': 501343667, 'eval_count': 41, 'eval_duration': 699812169, 'logprobs': None, 'model_name': 'qwen3-coder:latest', 'model_provider': 'ollama'}, id='lc_run--58fd1c7c-2527-4207-9ee2-faa8fcef58d6-0', tool_calls=[{'name': 'amass_viz', 'args': {'domain': 'bitfarmsmining-services.top', 'format': 'd3'}, 'id': '76982639-5a21-47a1-8e22-6d26e96fb398', 'type': 'tool_call'}], usage_metadata={'input_tokens': 611, 'output_tokens': 41, 'total_tokens': 652}), ToolMessage(content='{\\n  \"status\": \"success\",\\n  \"domain\": \"bitfarmsmining-services.top\",\\n  \"format\": \"d3\",\\n  \"graph\": {\\n    \"nodes\": [],\\n    \"edges\": [],\\n    \"metadata\": {\\n      \"domain\": \"bitfarmsmining-services.top\",\\n      \"format\": \"d3\",\\n      \"output_dir\": \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass\"\\n    }\\n  },\\n  \"output_files\": [\\n    \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html\"\\n  ],\\n  \"node_count\": 0,\\n  \"edge_count\": 0,\\n  \"execution_method\": \"official_docker_image\",\\n  \"user_id\": \"\"\\n}', name='amass_viz', id='c268de7e-a834-4269-9493-6e1689acfb4c', tool_call_id='76982639-5a21-47a1-8e22-6d26e96fb398'), AIMessage(content=\"I've created a D3 visualization graph for bitfarmsmining-services.top using Amass Viz. The graph is available in the following file:\\n\\n/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html\\n\\nThis visualization will show the network graph d",
+    "messages": [
+      {
+        "type": "HumanMessage",
+        "content": "Create a D3 visualization graph for bitfarmsmining-services.top using Amass Viz"
+      },
+      {
+        "type": "AIMessage",
+        "content": ""
+      },
+      {
+        "type": "ToolMessage",
+        "content": "{\n  \"status\": \"success\",\n  \"domain\": \"bitfarmsmining-services.top\",\n  \"format\": \"d3\",\n  \"graph\": {\n    \"nodes\": [],\n    \"edges\": [],\n    \"metadata\": {\n      \"domain\": \"bitfarmsmining-services.top\",\n      \"format\": \"d3\",\n      \"output_dir\": \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass\"\n    }\n  },\n  \"output_files\": [\n    \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html\"\n  ],\n  \"node_count\": 0,\n  \"edge_count\": 0,\n  \"execution_method\": \"official_docker_image\",\n  \"user_id\": \"\"\n}"
+      },
+      {
+        "type": "AIMessage",
+        "content": "I've created a D3 visualization graph for bitfarmsmining-services.top using Amass Viz. The graph is available in the following file:\n\n/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html\n\nThis visualization will show the network graph discovered by Amass for the specified domain, including relationships between domains, subdomains, and IP addresses. Since the graph shows 0 nodes and 0 edges, it indicates that no assets were found during the enumeration process for this domain.\n\nTo view the visualization, simply open the HTML file in any web browser. The graph will display the attack surface of the domain with interactive elements to explore the network structure.\n\nWould you like me to generate a visualization in a different format (JSON, DOT, or GEXF) or perform any other analysis on this domain?"
+      }
+    ],
+    "messages_count": 4,
+    "domain": "bitfarmsmining-services.top",
+    "tool": "amass_viz"
+  }
+}

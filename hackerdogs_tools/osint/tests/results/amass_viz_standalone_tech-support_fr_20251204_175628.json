@@ -1,0 +1,27 @@
+{
+  "tool": "amass_viz",
+  "test_type": "standalone",
+  "timestamp": "20251204_175628",
+  "domain": "tech-support.fr",
+  "result": {
+    "status": "success",
+    "domain": "tech-support.fr",
+    "format": "d3",
+    "graph": {
+      "nodes": [],
+      "edges": [],
+      "metadata": {
+        "domain": "tech-support.fr",
+        "format": "d3",
+        "output_dir": "/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz__pd8s1p7"
+      }
+    },
+    "output_files": [
+      "/var/folders/8v/3cjq3cc10pd0qqvzp3zzzn8m0000gp/T/amass_viz__pd8s1p7/amass.html"
+    ],
+    "node_count": 0,
+    "edge_count": 0,
+    "execution_method": "official_docker_image",
+    "user_id": "test_user"
+  }
+}

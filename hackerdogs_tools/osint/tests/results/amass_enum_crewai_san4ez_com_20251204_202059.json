@@ -1,0 +1,13 @@
+{
+  "tool": "amass_enum",
+  "test_type": "crewai",
+  "timestamp": "20251204_202059",
+  "domain": "san4ez.com",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "- san4ez.com\n- qwerty.san4ez.com",
+    "domain": "san4ez.com",
+    "tool": "amass_enum"
+  }
+}

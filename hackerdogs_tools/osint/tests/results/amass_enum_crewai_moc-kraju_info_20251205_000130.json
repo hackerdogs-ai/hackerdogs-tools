@@ -1,0 +1,13 @@
+{
+  "tool": "amass_enum",
+  "test_type": "crewai",
+  "timestamp": "20251205_000130",
+  "domain": "moc-kraju.info",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "- moc-kraju.info",
+    "domain": "moc-kraju.info",
+    "tool": "amass_enum"
+  }
+}

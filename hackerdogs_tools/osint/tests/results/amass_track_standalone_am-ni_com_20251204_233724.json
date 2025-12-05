@@ -1,0 +1,16 @@
+{
+  "tool": "amass_track",
+  "test_type": "standalone",
+  "timestamp": "20251204_233724",
+  "domain": "am-ni.com",
+  "result": {
+    "status": "success",
+    "domain": "am-ni.com",
+    "since": null,
+    "new_assets": [],
+    "new_asset_count": 0,
+    "raw_output": "",
+    "execution_method": "official_docker_image",
+    "user_id": "test_user"
+  }
+}

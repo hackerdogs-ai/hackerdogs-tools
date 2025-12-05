@@ -1,0 +1,13 @@
+{
+  "tool": "amass_track",
+  "test_type": "crewai",
+  "timestamp": "20251205_000145",
+  "domain": "spincastle.fr",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "No newly discovered assets found for spincastle.fr",
+    "domain": "spincastle.fr",
+    "tool": "amass_track"
+  }
+}

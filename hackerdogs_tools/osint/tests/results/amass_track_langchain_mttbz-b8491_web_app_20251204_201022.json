@@ -1,0 +1,32 @@
+{
+  "tool": "amass_track",
+  "test_type": "langchain",
+  "timestamp": "20251204_201022",
+  "domain": "mttbz-b8491.web.app",
+  "result": {
+    "status": "success",
+    "agent_type": "langchain",
+    "result": "{'messages': [HumanMessage(content='Track newly discovered assets for mttbz-b8491.web.app using Amass Track', additional_kwargs={}, response_metadata={}, id='705d6af8-c4d0-4862-b270-de7eaec7bfea'), AIMessage(content='', additional_kwargs={}, response_metadata={'model': 'qwen3-coder:latest', 'created_at': '2025-12-05T04:10:20.219579Z', 'done': True, 'done_reason': 'stop', 'total_duration': 970929625, 'load_duration': 58227125, 'prompt_eval_count': 472, 'prompt_eval_duration': 338876084, 'eval_count': 33, 'eval_duration': 564035043, 'logprobs': None, 'model_name': 'qwen3-coder:latest', 'model_provider': 'ollama'}, id='lc_run--a2eb41a7-d8a8-406c-bf41-422e0f96453d-0', tool_calls=[{'name': 'amass_track', 'args': {'domain': 'mttbz-b8491.web.app'}, 'id': '3b7c015a-c276-4a10-8012-3684966c929f', 'type': 'tool_call'}], usage_metadata={'input_tokens': 472, 'output_tokens': 33, 'total_tokens': 505}), ToolMessage(content='{\\n  \"status\": \"success\",\\n  \"domain\": \"mttbz-b8491.web.app\",\\n  \"since\": null,\\n  \"new_assets\": [],\\n  \"new_asset_count\": 0,\\n  \"raw_output\": \"\",\\n  \"execution_method\": \"official_docker_image\",\\n  \"user_id\": \"\"\\n}', name='amass_track', id='f511b2cd-72d7-4637-b217-62c08df7597e', tool_call_id='3b7c015a-c276-4a10-8012-3684966c929f'), AIMessage(content='The Amass Track tool did not discover any newly registered or newly discovered assets for the domain `mttbz-b8491.web.app`. \\n\\nThis could mean that:\\n- No new assets were found since the last scan or since the domain was first enumerated.\\n- The domain might not have any subdomains or assets being tracked.\\n- There might be no historical data to compare against.\\n\\nIf you have a specific time frame or additional parameters in mind, please let me know so I can adjust the tracking accordingly.', additional_kwargs={}, response_metadata={'model': 'qwen3-coder:latest', 'created_at': '2025-12-05T04:10:22.907007Z', 'done': True, 'done_reason': 'stop', 'total_duration': 2085276334, 'load_duration': 64261292, 'prompt_eval_",
+    "messages": [
+      {
+        "type": "HumanMessage",
+        "content": "Track newly discovered assets for mttbz-b8491.web.app using Amass Track"
+      },
+      {
+        "type": "AIMessage",
+        "content": ""
+      },
+      {
+        "type": "ToolMessage",
+        "content": "{\n  \"status\": \"success\",\n  \"domain\": \"mttbz-b8491.web.app\",\n  \"since\": null,\n  \"new_assets\": [],\n  \"new_asset_count\": 0,\n  \"raw_output\": \"\",\n  \"execution_method\": \"official_docker_image\",\n  \"user_id\": \"\"\n}"
+      },
+      {
+        "type": "AIMessage",
+        "content": "The Amass Track tool did not discover any newly registered or newly discovered assets for the domain `mttbz-b8491.web.app`. \n\nThis could mean that:\n- No new assets were found since the last scan or since the domain was first enumerated.\n- The domain might not have any subdomains or assets being tracked.\n- There might be no historical data to compare against.\n\nIf you have a specific time frame or additional parameters in mind, please let me know so I can adjust the tracking accordingly."
+      }
+    ],
+    "messages_count": 4,
+    "domain": "mttbz-b8491.web.app",
+    "tool": "amass_track"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "tool": "amass_viz",
+  "test_type": "standalone",
+  "timestamp": "20251204_214131",
+  "domain": "domsub.net",
+  "result": {
+    "status": "success",
+    "domain": "domsub.net",
+    "format": "d3",
+    "graph": {
+      "nodes": [],
+      "edges": [],
+      "metadata": {
+        "domain": "domsub.net",
+        "format": "d3",
+        "output_dir": "/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass"
+      }
+    },
+    "output_files": [
+      "/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html"
+    ],
+    "node_count": 0,
+    "edge_count": 0,
+    "execution_method": "official_docker_image",
+    "user_id": "test_user"
+  }
+}

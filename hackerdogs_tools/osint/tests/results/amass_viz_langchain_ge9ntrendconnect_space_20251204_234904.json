@@ -1,0 +1,32 @@
+{
+  "tool": "amass_viz",
+  "test_type": "langchain",
+  "timestamp": "20251204_234904",
+  "domain": "ge9ntrendconnect.space",
+  "result": {
+    "status": "success",
+    "agent_type": "langchain",
+    "result": "{'messages': [HumanMessage(content='Create a D3 visualization graph for ge9ntrendconnect.space using Amass Viz', additional_kwargs={}, response_metadata={}, id='cf18dd52-4976-4fc5-93e1-a9767552083f'), AIMessage(content='', additional_kwargs={}, response_metadata={'model': 'qwen3-coder:latest', 'created_at': '2025-12-05T07:49:01.15351Z', 'done': True, 'done_reason': 'stop', 'total_duration': 1252701417, 'load_duration': 59858167, 'prompt_eval_count': 610, 'prompt_eval_duration': 498783792, 'eval_count': 40, 'eval_duration': 683231791, 'logprobs': None, 'model_name': 'qwen3-coder:latest', 'model_provider': 'ollama'}, id='lc_run--3e3ab700-fcbb-4553-8936-ccb54276e335-0', tool_calls=[{'name': 'amass_viz', 'args': {'domain': 'ge9ntrendconnect.space', 'format': 'd3'}, 'id': '4345c9eb-9da1-4576-843c-d75d787d8e69', 'type': 'tool_call'}], usage_metadata={'input_tokens': 610, 'output_tokens': 40, 'total_tokens': 650}), ToolMessage(content='{\\n  \"status\": \"success\",\\n  \"domain\": \"ge9ntrendconnect.space\",\\n  \"format\": \"d3\",\\n  \"graph\": {\\n    \"nodes\": [],\\n    \"edges\": [],\\n    \"metadata\": {\\n      \"domain\": \"ge9ntrendconnect.space\",\\n      \"format\": \"d3\",\\n      \"output_dir\": \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass\"\\n    }\\n  },\\n  \"output_files\": [\\n    \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html\"\\n  ],\\n  \"node_count\": 0,\\n  \"edge_count\": 0,\\n  \"execution_method\": \"official_docker_image\",\\n  \"user_id\": \"\"\\n}', name='amass_viz', id='5cd9b958-7b45-4a46-89be-8d8aedfd7cf4', tool_call_id='4345c9eb-9da1-4576-843c-d75d787d8e69'), AIMessage(content='The D3 visualization graph for the domain \"ge9ntrendconnect.space\" has been successfully created. However, the graph contains no nodes or edges, indicating that no subdomains or IP addresses were discovered during the enumeration process.\\n\\nThe output file is located at:\\n`/Users/tejaswiredkar/Documents/GitHub/hack",
+    "messages": [
+      {
+        "type": "HumanMessage",
+        "content": "Create a D3 visualization graph for ge9ntrendconnect.space using Amass Viz"
+      },
+      {
+        "type": "AIMessage",
+        "content": ""
+      },
+      {
+        "type": "ToolMessage",
+        "content": "{\n  \"status\": \"success\",\n  \"domain\": \"ge9ntrendconnect.space\",\n  \"format\": \"d3\",\n  \"graph\": {\n    \"nodes\": [],\n    \"edges\": [],\n    \"metadata\": {\n      \"domain\": \"ge9ntrendconnect.space\",\n      \"format\": \"d3\",\n      \"output_dir\": \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass\"\n    }\n  },\n  \"output_files\": [\n    \"/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html\"\n  ],\n  \"node_count\": 0,\n  \"edge_count\": 0,\n  \"execution_method\": \"official_docker_image\",\n  \"user_id\": \"\"\n}"
+      },
+      {
+        "type": "AIMessage",
+        "content": "The D3 visualization graph for the domain \"ge9ntrendconnect.space\" has been successfully created. However, the graph contains no nodes or edges, indicating that no subdomains or IP addresses were discovered during the enumeration process.\n\nThe output file is located at:\n`/Users/tejaswiredkar/Documents/GitHub/hackerdogs-tools/hackerdogs_tools/osint/tests/results/amass/amass.html`\n\nYou can open this HTML file in a web browser to view the visualization. Since there are no assets to display, the graph will be empty."
+      }
+    ],
+    "messages_count": 4,
+    "domain": "ge9ntrendconnect.space",
+    "tool": "amass_viz"
+  }
+}

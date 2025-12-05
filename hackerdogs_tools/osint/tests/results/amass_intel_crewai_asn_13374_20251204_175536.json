@@ -1,0 +1,12 @@
+{
+  "tool": "amass_intel",
+  "test_type": "crewai",
+  "timestamp": "20251204_175536",
+  "domain": "asn_13374",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "The Amass Intelligence Gathering tool failed to return results for ASN 13374 due to technical limitations in the tool's implementation, specifically with incompatible flags being passed (-json). The tool appears to be designed for domain enumeration rather than ASN-based domain discovery in this version. No domains were returned for ASN 13374.",
+    "tool": "amass_intel"
+  }
+}

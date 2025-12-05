@@ -1,0 +1,12 @@
+{
+  "tool": "amass_intel",
+  "test_type": "crewai",
+  "timestamp": "20251204_235440",
+  "domain": "asn_13374",
+  "result": {
+    "status": "success",
+    "agent_type": "crewai",
+    "result": "I was unable to retrieve a list of domains for owasp.org using the Amass Intel tool due to technical issues with the tool. Based on general knowledge, the primary domain for OWASP is owasp.org, but the tool failed to return any additional domains or subdomains. The tool encountered repeated errors and could not complete the enumeration task.",
+    "tool": "amass_intel"
+  }
+}
