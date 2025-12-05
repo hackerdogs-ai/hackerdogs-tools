@@ -104,7 +104,7 @@ class TestSubfinderLangChain:
         """Create LangChain agent with subfinder tool."""
         tools = [subfinder_enum]
         agent = create_agent(
-            llm=llm,
+            model=llm,
             tools=tools,
             system_prompt="You are a cybersecurity analyst. Use the subfinder tool for OSINT operations."
         )
@@ -123,23 +123,12 @@ class TestSubfinderLangChain:
         
         # Assertions        assert result is not None, "Agent returned None"
         assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
-        # Save LangChain agent result
+        # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            # Extract messages for better visibility
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:500] if hasattr(msg, 'content') else str(msg)[:500]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:1000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain
             }
             result_file = save_test_result("subfinder", "langchain", result_data, test_domain)
@@ -266,23 +255,12 @@ def run_all_tests():
         # Assertions        assert result is not None
         assert "messages" in result or "output" in result
         
-        # Save LangChain agent result
+        # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            # Extract messages for better visibility
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:500] if hasattr(msg, 'content') else str(msg)[:500]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:1000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain
             }
             result_file = save_test_result("subfinder", "langchain", result_data, test_domain)
@@ -339,27 +317,24 @@ def run_all_tests():
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         
-        # Save CrewAI agent result
+        # Save CrewAI agent result - complete result as-is
         try:
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": str(result)[:1000] if result else None,
+                "result": serialize_crewai_result(result) if result else None,
                 "domain": test_domain
             }
             result_file = save_test_result("subfinder", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
-        
-        # Print CrewAI result for verification
-        print("\n" + "=" * 80)
-        print("CREWAI AGENT RESULT:")
-        print("=" * 80)
-        print(str(result)[:500])
-        print("=" * 80 + "\n")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ CrewAI test passed")
     except Exception as e:

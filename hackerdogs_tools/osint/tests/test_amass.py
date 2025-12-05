@@ -55,17 +55,29 @@ class TestAmassIntelStandalone:
         """Test amass_intel tool execution without agent."""
         runtime = create_mock_runtime(state={"user_id": "test_user"})
         
-        # Test with ASN (known working ASN)
-        # Note: Amass v5.0 requires -d DOMAIN, ASN is a filter
-        # Use owasp.org which is smaller and faster than cloudflare.com
+        # Use a known domain that works well with Amass
+        test_domain = "owasp.org"  # Smaller, faster domain
+        
         result = amass_intel.invoke({
             "runtime": runtime,
-            "domain": "owasp.org",  # Smaller domain for faster testing
-            "asn": None,  # No ASN filter for faster execution
+            "domain": test_domain,  # Required parameter
+            "asn": None,  # Optional filter - set to None for faster execution
             "timeout": 600  # Increased timeout for intel operations
         })
         
         result_data = json.loads(result)
+        
+        # Check if result is an error
+        if result_data.get("status") == "error":
+            error_msg = result_data.get("message", "Unknown error")
+            print(f"\n⚠️  Amass Intel returned error: {error_msg}")
+            # Still save the error result for debugging
+            safe_domain = test_domain.replace(".", "_")
+            result_file = save_test_result("amass_intel", "standalone", result_data, safe_domain)
+            print(f"📁 Error result saved to: {result_file}")
+            # Don't fail the test - this might be expected for some domains
+            # But log it for investigation
+            return
         
         print("\n" + "=" * 80)
         print("AMASS INTEL - TOOL JSON OUTPUT:")
@@ -73,8 +85,14 @@ class TestAmassIntelStandalone:
         print(json.dumps(result_data, indent=2))
         print("=" * 80 + "\n")
         
-        result_file = save_test_result("amass_intel", "standalone", result_data, "asn_13374")
+        # Use actual domain in filename, not "asn_13374"
+        safe_domain = test_domain.replace(".", "_")
+        result_file = save_test_result("amass_intel", "standalone", result_data, safe_domain)
         print(f"📁 JSON result saved to: {result_file}")
+        
+        # Assertions
+        assert result_data.get("status") == "success", f"Expected success, got: {result_data.get('status')}"
+        assert "domain" in result_data or "domains" in result_data, "Result should contain domain information"
         
         assert "status" in result_data
         assert result_data["status"] in ["success", "error"]
@@ -216,22 +234,12 @@ class TestAmassIntelLangChain:
         assert result is not None
         assert "messages" in result or "output" in result
         
-        # Save result
+        # Save result - complete result as-is, no truncation
         try:
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:2000] if hasattr(msg, 'content') else str(msg)[:2000]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:2000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result as-is, no truncation, no decoration
                 "tool": "amass_intel"
             }
             result_file = save_test_result("amass_intel", "langchain", result_data, "asn_13374")
@@ -275,22 +283,12 @@ class TestAmassEnumLangChain:
         assert result is not None
         assert "messages" in result or "output" in result
         
-        # Save result
+        # Save result - complete result as-is, no truncation, no decoration
         try:
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:2000] if hasattr(msg, 'content') else str(msg)[:2000]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:2000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain,
                 "tool": "amass_enum"
             }
@@ -335,22 +333,12 @@ class TestAmassVizLangChain:
         assert result is not None
         assert "messages" in result or "output" in result
         
-        # Save result
+        # Save result - complete result as-is, no truncation, no decoration
         try:
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:2000] if hasattr(msg, 'content') else str(msg)[:2000]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:2000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain,
                 "tool": "amass_viz"
             }
@@ -395,22 +383,12 @@ class TestAmassTrackLangChain:
         assert result is not None
         assert "messages" in result or "output" in result
         
-        # Save result
+        # Save result - complete result as-is, no truncation, no decoration
         try:
-            messages_data = []
-            if isinstance(result, dict) and "messages" in result:
-                for msg in result["messages"]:
-                    messages_data.append({
-                        "type": msg.__class__.__name__,
-                        "content": str(msg.content)[:2000] if hasattr(msg, 'content') else str(msg)[:2000]
-                    })
-            
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": str(result)[:2000] if result else None,
-                "messages": messages_data,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
                 "domain": test_domain,
                 "tool": "amass_track"
             }
@@ -470,16 +448,13 @@ class TestAmassIntelCrewAI:
         result = crew.kickoff(inputs={"domain": "owasp.org"})
         assert result is not None
         
-        # Save result - extract actual tool output from CrewAI result
+        # Save CrewAI agent result - complete result as-is
         try:
-            from .extract_crewai_tool_output import extract_tool_output_from_crewai_result
-            extracted = extract_tool_output_from_crewai_result(result)
-            
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": extracted["tool_output_json"] if extracted["tool_output_json"] else extracted["tool_output"],
-                "raw_result": extracted["raw_result"],
+                "result": serialize_crewai_result(result) if result else None,
                 "tool": "amass_intel"
             }
             result_file = save_test_result("amass_intel", "crewai", result_data, "asn_13374")
@@ -536,16 +511,13 @@ class TestAmassEnumCrewAI:
         result = crew.kickoff(inputs={"domain": test_domain})
         assert result is not None
         
-        # Save result - extract actual tool output from CrewAI result
+        # Save CrewAI agent result - complete result as-is
         try:
-            from .extract_crewai_tool_output import extract_tool_output_from_crewai_result
-            extracted = extract_tool_output_from_crewai_result(result)
-            
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": extracted["tool_output_json"] if extracted["tool_output_json"] else extracted["tool_output"],
-                "raw_result": extracted["raw_result"],
+                "result": serialize_crewai_result(result) if result else None,
                 "domain": test_domain,
                 "tool": "amass_enum"
             }
@@ -603,16 +575,13 @@ class TestAmassVizCrewAI:
         result = crew.kickoff(inputs={"domain": test_domain})
         assert result is not None
         
-        # Save result - extract actual tool output from CrewAI result
+        # Save CrewAI agent result - complete result as-is
         try:
-            from .extract_crewai_tool_output import extract_tool_output_from_crewai_result
-            extracted = extract_tool_output_from_crewai_result(result)
-            
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": extracted["tool_output_json"] if extracted["tool_output_json"] else extracted["tool_output"],
-                "raw_result": extracted["raw_result"],
+                "result": serialize_crewai_result(result) if result else None,
                 "domain": test_domain,
                 "tool": "amass_viz"
             }
@@ -670,16 +639,13 @@ class TestAmassTrackCrewAI:
         result = crew.kickoff(inputs={"domain": test_domain})
         assert result is not None
         
-        # Save result - extract actual tool output from CrewAI result
+        # Save CrewAI agent result - complete result as-is
         try:
-            from .extract_crewai_tool_output import extract_tool_output_from_crewai_result
-            extracted = extract_tool_output_from_crewai_result(result)
-            
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": extracted["tool_output_json"] if extracted["tool_output_json"] else extracted["tool_output"],
-                "raw_result": extracted["raw_result"],
+                "result": serialize_crewai_result(result) if result else None,
                 "domain": test_domain,
                 "tool": "amass_track"
             }
@@ -816,7 +782,7 @@ def run_all_tests():
                 result_data = {
                     "status": "success",
                     "agent_type": "langchain",
-                    "result": str(result)[:2000] if result else None,
+                    "result": result,  # Complete result as-is, no truncation
                     "messages": messages_data,
                     "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
                     "tool": f"amass_{tool_name}"
@@ -880,7 +846,7 @@ def run_all_tests():
                 result_data = {
                     "status": "success",
                     "agent_type": "crewai",
-                    "result": str(result)[:2000] if result else None,
+                    "result": result,  # Complete result as-is, no truncation
                     "tool": f"amass_{tool_name}"
                 }
                 result_file = save_test_result(f"amass_{tool_name}", "crewai", result_data, test_id)

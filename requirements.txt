@@ -46,7 +46,7 @@ google-auth==2.43.0
 googleapis-common-protos==1.72.0
 grpcio==1.67.1
 h11==0.16.0
--e git+https://github.com/hackerdogs-ai/hackerdogs-tools.git@8199869f045eb8ab9bceae462fc4b7bb1cdc2ddd#egg=hackerdogs_tools
+-e git+https://github.com/hackerdogs-ai/hackerdogs-tools.git@9c270ce5c1177b33f52b73a165b94d2a1b6b05b8#egg=hackerdogs_tools
 hd-logging==1.0.1
 hf-xet==1.2.0
 html5lib==1.1

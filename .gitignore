@@ -418,3 +418,9 @@ FodyWeavers.xsd
 *.msp
 .env
 venv/
+*.db
+*.db-shm
+*.db-wal
+*.db
+*.db-wal
+/hackerdogs_tools/osint/tests/results
