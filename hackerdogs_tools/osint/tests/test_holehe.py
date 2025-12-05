@@ -26,6 +26,7 @@ from hackerdogs_tools.osint.identity.holehe_langchain import holehe_search
 from hackerdogs_tools.osint.identity.holehe_crewai import HoleheTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
+from hackerdogs_tools.osint.test_identity_data import get_random_email
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
 from hackerdogs_tools.osint.tests.save_json_results import save_test_result
 
@@ -38,15 +39,15 @@ class TestHoleheStandalone:
         # Use mock runtime since ToolRuntime is auto-injected in LangChain 1.x
         runtime = create_mock_runtime(state={"user_id": "test_user"})
         
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random realistic email (holehe checks email registration on sites)
+        test_email = get_random_email()
         
         # Tools are StructuredTool objects - use invoke() method
+        # Holehe requires "email" parameter, not "domain"
         result = holehe_search.invoke({
             "runtime": runtime,
-            "domain": test_domain,
-            "recursive": False,
-            "silent": True
+            "email": test_email,
+            "only_used": True
         })
         
         # Parse result
@@ -59,18 +60,73 @@ class TestHoleheStandalone:
         print(json.dumps(result_data, indent=2))
         print("=" * 80 + "\n")
         
-                # Save LangChain agent result - complete result as-is, no truncation, no decoration
+        # Save JSON result to file - VERBATIM without wrappers
+        result_file = save_test_result("holehe", "standalone", result_data, test_email.replace("@", "_at_"))
+        print(f"📁 JSON result saved to: {result_file}")
+        
+        # Assertions
+        assert "status" in result_data, f"Missing 'status' in result: {result_data}"
+        assert result_data["status"] in ["success", "error"], f"Invalid status: {result_data.get('status')}"
+        
+        if result_data["status"] == "success":
+            assert "email" in result_data, f"Missing 'email' in result: {result_data}"
+            print(f"✅ Tool executed successfully")
+            print(f"   Email: {result_data.get('email')}")
+            print(f"   Execution method: {result_data.get('execution_method', 'docker')}")
+        else:
+            # If error, should have message
+            assert "message" in result_data, f"Error status but no message: {result_data}"
+            print(f"⚠️  Tool returned error: {result_data.get('message')}")
+
+
+class TestHoleheLangChain:
+    """Test holehe tool with LangChain agent."""
+    
+    @pytest.fixture
+    def llm(self):
+        """Get LLM from environment."""
+        return get_llm_from_env()
+    
+    @pytest.fixture
+    def agent(self, llm):
+        """Create LangChain agent with holehe tool."""
+        tools = [holehe_search]
+        agent = create_agent(
+            model=llm,
+            tools=tools,
+            system_prompt="You are a cybersecurity analyst. Use the holehe tool for email registration checking."
+        )
+        return agent
+    
+    def test_holehe_langchain_agent(self, agent):
+        """Test holehe tool with LangChain agent."""
+        # Use a random realistic email (holehe checks email registration on sites)
+        test_email = get_random_email()
+        
+        # Execute query directly (agent is a runnable in LangChain 1.x)
+        # ToolRuntime is automatically injected by the agent
+        result = agent.invoke({
+            "messages": [HumanMessage(content=f"Check if email {test_email} is registered on sites using Holehe")]
+        })
+        
+        # Assertions
+        assert result is not None, "Agent returned None"
+        assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
+        
+        # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
                 "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain
+                "domain": test_email.replace("@", "_at_")
             }
-            result_file = save_test_result("holehe", "langchain", result_data, test_domain)
+            result_file = save_test_result("holehe", "langchain", result_data, test_email.replace("@", "_at_"))
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
+            import traceback
+            traceback.print_exc()
         
                 
         # Print agent result for verification
@@ -105,13 +161,13 @@ class TestHoleheCrewAI:
     
     def test_holehe_crewai_agent(self, agent, llm):
         """Test holehe tool with CrewAI agent."""
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random realistic email (holehe checks email registration on sites)
+        test_email = get_random_email()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Holehe",
+            description=f"Check if email {test_email} is registered on sites using Holehe",
             agent=agent,
-            expected_output="Results from holehe tool"
+            expected_output="Email registration check results from holehe tool"
         )
         
         crew = Crew(
@@ -124,19 +180,24 @@ class TestHoleheCrewAI:
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None, "CrewAI returned None"
-        # Save CrewAI agent result
+        # Assertions
+        assert result is not None, "CrewAI returned None"
+        
+        # Save CrewAI agent result - complete result as-is
         try:
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
-                "domain": test_domain
+                "result": serialize_crewai_result(result) if result else None,
+                "domain": test_email.replace("@", "_at_")
             }
-            result_file = save_test_result("holehe", "crewai", result_data, test_domain)
+            result_file = save_test_result("holehe", "crewai", result_data, test_email.replace("@", "_at_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
+            import traceback
+            traceback.print_exc()
         
                 
         # Print CrewAI result for verification
@@ -171,33 +232,35 @@ def run_all_tests():
         agent = create_agent(
             model=llm,
             tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the holehe tool for OSINT operations."
+            system_prompt="You are a cybersecurity analyst. Use the holehe tool for email registration checking."
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random realistic email (holehe checks email registration on sites)
+        test_email = get_random_email()
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Holehe")]
+            "messages": [HumanMessage(content=f"Check if email {test_email} is registered on sites using Holehe")]
         })
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         assert "messages" in result or "output" in result
         
-        # Save LangChain agent result
+        # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
             result_data = {
                 "status": "success",
                 "agent_type": "langchain",
-                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
-                "domain": test_domain
+                "result": result,  # Complete result dict as-is, no truncation, no decoration
+                "domain": test_email.replace("@", "_at_")
             }
-            result_file = save_test_result("holehe", "langchain", result_data, test_domain)
+            result_file = save_test_result("holehe", "langchain", result_data, test_email.replace("@", "_at_"))
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ LangChain test passed")
     except Exception as e:
@@ -218,13 +281,13 @@ def run_all_tests():
             llm=llm,
             verbose=True
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random realistic email (holehe checks email registration on sites)
+        test_email = get_random_email()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Holehe",
+            description=f"Check if email {test_email} is registered on sites using Holehe",
             agent=agent,
-            expected_output="Results from holehe tool"
+            expected_output="Email registration check results from holehe tool"
         )
         
         crew = Crew(
@@ -237,20 +300,24 @@ def run_all_tests():
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         
-        # Save CrewAI agent result
+        # Save CrewAI agent result - complete result as-is
         try:
+            from .save_json_results import serialize_crewai_result
             result_data = {
                 "status": "success",
                 "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
-                "domain": test_domain
+                "result": serialize_crewai_result(result) if result else None,
+                "domain": test_email.replace("@", "_at_")
             }
-            result_file = save_test_result("holehe", "crewai", result_data, test_domain)
+            result_file = save_test_result("holehe", "crewai", result_data, test_email.replace("@", "_at_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ CrewAI test passed")
     except Exception as e:
