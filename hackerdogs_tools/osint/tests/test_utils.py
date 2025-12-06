@@ -100,9 +100,12 @@ def get_crewai_llm_from_env() -> LLM:
             base_url = "http://localhost:11434"
         # CrewAI LLM for Ollama - use ollama/model_name format with base_url
         # This uses LiteLLM under the hood (no fallback, direct support)
+        # Set timeout to 900 seconds (15 minutes) to handle long-running tool executions
+        # The timeout is per LLM API call, not total execution time
         return LLM(
             model=f"ollama/{model_name}",
-            base_url=base_url
+            base_url=base_url,
+            timeout=900  # 15 minutes per LLM call (tool execution can take 5-10 minutes)
         )
     elif provider == "openai":
         if not api_key:

@@ -27,7 +27,7 @@ from hackerdogs_tools.osint.infrastructure.subfinder_crewai import SubfinderTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestSubfinderStandalone:
@@ -121,16 +121,13 @@ class TestSubfinderLangChain:
             "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Subfinder")]
         })
         
-        # Assertions        assert result is not None, "Agent returned None"
+        # Assertions
+        assert result is not None, "Agent returned None"
         assert "messages" in result or "output" in result, f"Invalid agent result structure: {result}"
-        # Save LangChain agent result - complete result as-is, no truncation, no decoration
+        
+        # Save LangChain agent result - VERBATIM, no wrapper
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("subfinder", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -192,13 +189,7 @@ class TestSubfinderCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("subfinder", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -260,12 +251,7 @@ def run_all_tests():
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("subfinder", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -325,13 +311,7 @@ def run_all_tests():
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("subfinder", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:

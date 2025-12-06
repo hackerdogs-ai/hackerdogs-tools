@@ -1,78 +1,37 @@
 """
 Test Identity Data Utility Module
 
-Provides random username and email selection for testing identity OSINT tools.
-This ensures tests use realistic, valid usernames and emails instead of hardcoded test values.
+Provides random username and email selection from usernames.txt for testing identity OSINT tools.
+This ensures tests use real, valid usernames and emails instead of placeholder values.
 
 Sources:
-- Usernames: test-usernames.txt (realistic usernames from various sources)
-- Emails: test-emails.txt (realistic email addresses)
+- Emails: usernames.txt (contains emails, usernames extracted from before @)
+- Usernames: Extracted from emails (substring before @)
 """
 
 import os
 import random
-from typing import List, Optional, Literal
+from typing import List, Optional
 from pathlib import Path
 
 
-# Paths to data files
-_USERNAMES_FILE = Path(__file__).parent / "test-usernames.txt"
-_EMAILS_FILE = Path(__file__).parent / "test-emails.txt"
+# Path to usernames file
+_USERNAMES_FILE = Path(__file__).parent / "tests" / "usernames.txt"
 
 # Caches
-_USERNAMES_CACHE: Optional[List[str]] = None
 _EMAILS_CACHE: Optional[List[str]] = None
-
-
-def _load_usernames() -> List[str]:
-    """
-    Load usernames from the test usernames file.
-    
-    Returns:
-        List of usernames (one per line, stripped of whitespace)
-    
-    Raises:
-        FileNotFoundError: If the usernames file doesn't exist
-        IOError: If the file cannot be read
-    """
-    global _USERNAMES_CACHE
-    
-    if _USERNAMES_CACHE is not None:
-        return _USERNAMES_CACHE
-    
-    if not _USERNAMES_FILE.exists():
-        raise FileNotFoundError(
-            f"Usernames file not found: {_USERNAMES_FILE}\n"
-            f"Please ensure test-usernames.txt exists in hackerdogs_tools/osint/"
-        )
-    
-    try:
-        with open(_USERNAMES_FILE, 'r', encoding='utf-8') as f:
-            usernames = [
-                line.strip() 
-                for line in f 
-                if line.strip() and not line.strip().startswith('#')
-            ]
-        
-        if not usernames:
-            raise ValueError(f"No valid usernames found in {_USERNAMES_FILE}")
-        
-        _USERNAMES_CACHE = usernames
-        return usernames
-    
-    except IOError as e:
-        raise IOError(f"Failed to read usernames file: {e}")
+_USERNAMES_CACHE: Optional[List[str]] = None
 
 
 def _load_emails() -> List[str]:
     """
-    Load emails from the test emails file.
+    Load emails from the usernames.txt file.
     
     Returns:
         List of email addresses (one per line, stripped of whitespace)
     
     Raises:
-        FileNotFoundError: If the emails file doesn't exist
+        FileNotFoundError: If the usernames file doesn't exist
         IOError: If the file cannot be read
     """
     global _EMAILS_CACHE
@@ -80,69 +39,81 @@ def _load_emails() -> List[str]:
     if _EMAILS_CACHE is not None:
         return _EMAILS_CACHE
     
-    if not _EMAILS_FILE.exists():
+    if not _USERNAMES_FILE.exists():
         raise FileNotFoundError(
-            f"Emails file not found: {_EMAILS_FILE}\n"
-            f"Please ensure test-emails.txt exists in hackerdogs_tools/osint/"
+            f"Usernames file not found: {_USERNAMES_FILE}\n"
+            f"Please ensure usernames.txt exists in hackerdogs_tools/osint/tests/"
         )
     
     try:
-        with open(_EMAILS_FILE, 'r', encoding='utf-8') as f:
+        with open(_USERNAMES_FILE, 'r', encoding='utf-8') as f:
             emails = [
                 line.strip() 
                 for line in f 
-                if line.strip() and not line.strip().startswith('#')
+                if line.strip() and not line.strip().startswith('#') and '@' in line.strip()
             ]
         
         if not emails:
-            raise ValueError(f"No valid emails found in {_EMAILS_FILE}")
+            raise ValueError(f"No valid emails found in {_USERNAMES_FILE}")
         
         _EMAILS_CACHE = emails
         return emails
     
     except IOError as e:
-        raise IOError(f"Failed to read emails file: {e}")
+        raise IOError(f"Failed to read usernames file: {e}")
+
+
+def _load_usernames() -> List[str]:
+    """
+    Extract usernames from emails (substring before @).
+    
+    Returns:
+        List of unique usernames extracted from emails
+    """
+    global _USERNAMES_CACHE
+    
+    if _USERNAMES_CACHE is not None:
+        return _USERNAMES_CACHE
+    
+    emails = _load_emails()
+    usernames = set()
+    
+    for email in emails:
+        if '@' in email:
+            username = email.split('@')[0].strip()
+            if username:  # Only add non-empty usernames
+                usernames.add(username)
+    
+    if not usernames:
+        raise ValueError(f"No valid usernames could be extracted from {_USERNAMES_FILE}")
+    
+    _USERNAMES_CACHE = list(usernames)
+    return _USERNAMES_CACHE
 
 
 def get_random_username() -> str:
     """
-    Get a random username from the available username pool.
+    Get a random username extracted from emails.
     
-    This is useful for testing identity OSINT tools (sherlock, maigret) with
-    realistic usernames instead of hardcoded test values.
+    Usernames are extracted as the substring before @ in email addresses.
+    This is useful for testing username enumeration tools like Sherlock and Maigret.
     
     Returns:
-        A random username
+        A random username (extracted from email addresses)
     
     Example:
         >>> username = get_random_username()
         >>> print(username)
-        "johndoe"
+        "asmith"
     """
     usernames = _load_usernames()
     return random.choice(usernames)
 
 
-def get_random_email() -> str:
-    """
-    Get a random email from the available email pool.
-    
-    This is useful for testing identity OSINT tools (ghunt, holehe) with
-    realistic email addresses instead of hardcoded test values.
-    
-    Returns:
-        A random email address
-    
-    Example:
-        >>> email = get_random_email()
-        >>> print(email)
-        "john.doe@example.com"
-    """
-    emails = _load_emails()
-    return random.choice(emails)
-
-
-def get_random_usernames(count: int = 1, unique: bool = True) -> List[str]:
+def get_random_usernames(
+    count: int = 1,
+    unique: bool = True
+) -> List[str]:
     """
     Get multiple random usernames.
     
@@ -155,6 +126,11 @@ def get_random_usernames(count: int = 1, unique: bool = True) -> List[str]:
     
     Raises:
         ValueError: If count exceeds available unique usernames
+    
+    Example:
+        >>> usernames = get_random_usernames(count=5)
+        >>> print(usernames)
+        ["asmith", "bjohnson", "cwilliams", "djones", "ebrown"]
     """
     usernames = _load_usernames()
     
@@ -168,9 +144,30 @@ def get_random_usernames(count: int = 1, unique: bool = True) -> List[str]:
         return [random.choice(usernames) for _ in range(count)]
 
 
-def get_random_emails(count: int = 1, unique: bool = True) -> List[str]:
+def get_random_email() -> str:
     """
-    Get multiple random emails.
+    Get a random email address from the usernames.txt file.
+    
+    This is useful for testing email investigation tools like GHunt and Holehe.
+    
+    Returns:
+        A random email address
+    
+    Example:
+        >>> email = get_random_email()
+        >>> print(email)
+        "asmith@gmail.com"
+    """
+    emails = _load_emails()
+    return random.choice(emails)
+
+
+def get_random_emails(
+    count: int = 1,
+    unique: bool = True
+) -> List[str]:
+    """
+    Get multiple random email addresses.
     
     Args:
         count: Number of emails to return (default: 1)
@@ -181,6 +178,11 @@ def get_random_emails(count: int = 1, unique: bool = True) -> List[str]:
     
     Raises:
         ValueError: If count exceeds available unique emails
+    
+    Example:
+        >>> emails = get_random_emails(count=3)
+        >>> print(emails)
+        ["asmith@gmail.com", "bjohnson@hotmail.com", "cwilliams@gmail.com"]
     """
     emails = _load_emails()
     
@@ -194,30 +196,44 @@ def get_random_emails(count: int = 1, unique: bool = True) -> List[str]:
         return [random.choice(emails) for _ in range(count)]
 
 
-def reset_cache() -> None:
+def get_username_from_email(email: str) -> str:
     """
-    Reset all data caches.
+    Extract username from an email address.
     
-    Useful for testing or if the data files are updated.
-    """
-    global _USERNAMES_CACHE, _EMAILS_CACHE
-    _USERNAMES_CACHE = None
-    _EMAILS_CACHE = None
-
-
-def get_usernames_count() -> int:
-    """
-    Get the total number of available usernames.
+    Args:
+        email: Email address (e.g., "asmith@gmail.com")
     
     Returns:
-        Number of usernames available
+        Username extracted from email (e.g., "asmith")
+    
+    Raises:
+        ValueError: If email doesn't contain @
+    
+    Example:
+        >>> username = get_username_from_email("asmith@gmail.com")
+        >>> print(username)
+        "asmith"
     """
-    return len(_load_usernames())
+    if '@' not in email:
+        raise ValueError(f"Invalid email address: {email}")
+    
+    return email.split('@')[0].strip()
+
+
+def reset_cache() -> None:
+    """
+    Reset all identity data caches.
+    
+    Useful for testing or if the usernames file is updated.
+    """
+    global _EMAILS_CACHE, _USERNAMES_CACHE
+    _EMAILS_CACHE = None
+    _USERNAMES_CACHE = None
 
 
 def get_emails_count() -> int:
     """
-    Get the total number of available emails.
+    Get the total number of available email addresses.
     
     Returns:
         Number of emails available
@@ -225,12 +241,22 @@ def get_emails_count() -> int:
     return len(_load_emails())
 
 
+def get_usernames_count() -> int:
+    """
+    Get the total number of available unique usernames.
+    
+    Returns:
+        Number of unique usernames available
+    """
+    return len(_load_usernames())
+
+
 if __name__ == "__main__":
     # Test the module
     print("Testing test_identity_data module...")
     print("=" * 60)
-    print(f"Usernames: {get_usernames_count():,}")
-    print(f"Emails: {get_emails_count():,}")
+    print(f"Total emails: {get_emails_count():,}")
+    print(f"Unique usernames: {get_usernames_count():,}")
     print("=" * 60)
     
     print(f"\nRandom username: {get_random_username()}")
@@ -238,4 +264,7 @@ if __name__ == "__main__":
     
     print(f"\n5 random usernames: {get_random_usernames(5)}")
     print(f"5 random emails: {get_random_emails(5)}")
-
+    
+    # Test username extraction
+    test_email = get_random_email()
+    print(f"\nExtract username from '{test_email}': {get_username_from_email(test_email)}")

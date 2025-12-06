@@ -438,6 +438,8 @@ def execute_in_docker(
         "subfinder": "projectdiscovery/subfinder:latest",
         "nuclei": "projectdiscovery/nuclei:latest",
         "amass": "owaspamass/amass:latest",  # Official OWASP Amass image
+        "sherlock": "sherlock/sherlock:latest",  # Official Sherlock image
+        "maigret": "soxoj/maigret:latest",  # Official Maigret image
     }
     
     # Try official image first if available

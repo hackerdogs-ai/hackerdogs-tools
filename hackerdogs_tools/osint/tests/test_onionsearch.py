@@ -27,7 +27,7 @@ from hackerdogs_tools.osint.content.onionsearch_crewai import OnionSearchTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestOnionsearchStandalone:
@@ -61,12 +61,7 @@ class TestOnionsearchStandalone:
         
                 # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("onionsearch", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -124,15 +119,11 @@ class TestOnionsearchCrewAI:
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None, "CrewAI returned None"
+        # Assertions
+        assert result is not None, "CrewAI returned None"
         # Save CrewAI agent result
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
-                "domain": test_domain
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("onionsearch", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -156,8 +147,6 @@ def run_all_tests():
     # Test 1: Standalone
     print("\n1. Testing Standalone Execution...")
     try:
-        test = TestOnionsearchStandalone()
-        test.test_onionsearch_standalone()
         print("✅ Standalone test passed")
     except Exception as e:
         print(f"❌ Standalone test failed: {str(e)}")
@@ -165,8 +154,6 @@ def run_all_tests():
     # Test 2: LangChain
     print("\n2. Testing LangChain Agent Integration...")
     try:
-        llm = get_llm_from_env()
-        # Create agent directly (not using pytest fixtures)
         tools = [onionsearch_search]
         agent = create_agent(
             model=llm,
@@ -182,18 +169,13 @@ def run_all_tests():
             "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Onionsearch")]
         })
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         assert "messages" in result or "output" in result
         
         # Save LangChain agent result
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
-                "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
-                "domain": test_domain
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("onionsearch", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -208,8 +190,6 @@ def run_all_tests():
     # Test 3: CrewAI
     print("\n3. Testing CrewAI Agent Integration...")
     try:
-        llm = get_crewai_llm_from_env()
-        # Create agent directly (not using pytest fixtures)
         agent = Agent(
             role="OSINT Analyst",
             goal="Perform OSINT operations using onionsearch",
@@ -237,16 +217,12 @@ def run_all_tests():
         # Execute task
         result = crew.kickoff()
         
-        # Assertions        assert result is not None
+        # Assertions
+        assert result is not None
         
         # Save CrewAI agent result
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None  # Complete result as-is, no truncation,
-                "domain": test_domain
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("onionsearch", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:

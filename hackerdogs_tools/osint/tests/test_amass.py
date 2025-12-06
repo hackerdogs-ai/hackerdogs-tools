@@ -41,7 +41,7 @@ from hackerdogs_tools.osint.infrastructure.amass_crewai import (
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result
 
 
 # ============================================================================
@@ -236,12 +236,6 @@ class TestAmassIntelLangChain:
         
         # Save result - complete result as-is, no truncation
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result as-is, no truncation, no decoration
-                "tool": "amass_intel"
-            }
             result_file = save_test_result("amass_intel", "langchain", result_data, "asn_13374")
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -285,13 +279,6 @@ class TestAmassEnumLangChain:
         
         # Save result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain,
-                "tool": "amass_enum"
-            }
             result_file = save_test_result("amass_enum", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -335,13 +322,6 @@ class TestAmassVizLangChain:
         
         # Save result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain,
-                "tool": "amass_viz"
-            }
             result_file = save_test_result("amass_viz", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -385,13 +365,6 @@ class TestAmassTrackLangChain:
         
         # Save result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain,
-                "tool": "amass_track"
-            }
             result_file = save_test_result("amass_track", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -450,13 +423,7 @@ class TestAmassIntelCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "tool": "amass_intel"
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("amass_intel", "crewai", result_data, "asn_13374")
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -513,14 +480,7 @@ class TestAmassEnumCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain,
-                "tool": "amass_enum"
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("amass_enum", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -577,14 +537,7 @@ class TestAmassVizCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain,
-                "tool": "amass_viz"
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("amass_viz", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -641,14 +594,7 @@ class TestAmassTrackCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain,
-                "tool": "amass_track"
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("amass_track", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -695,7 +641,6 @@ def run_all_tests():
         # Test 1: Standalone
         print(f"\n1. Testing {tool_name} Standalone Execution...")
         try:
-            runtime = create_mock_runtime(state={"user_id": "test_user"})
             
             if tool_name == "intel":
                 result = langchain_tools[tool_name].invoke({
@@ -747,7 +692,6 @@ def run_all_tests():
         # Test 2: LangChain
         print(f"\n2. Testing {tool_name} LangChain Agent Integration...")
         try:
-            llm = get_llm_from_env()
             tools_list = [langchain_tools[tool_name]]
             agent = create_agent(
                 model=llm,
@@ -771,7 +715,6 @@ def run_all_tests():
             
             # Save result
             try:
-                messages_data = []
                 if isinstance(result, dict) and "messages" in result:
                     for msg in result["messages"]:
                         messages_data.append({
@@ -779,14 +722,7 @@ def run_all_tests():
                             "content": str(msg.content)[:2000] if hasattr(msg, 'content') else str(msg)[:2000]
                         })
                 
-                result_data = {
-                    "status": "success",
-                    "agent_type": "langchain",
-                    "result": result,  # Complete result as-is, no truncation
-                    "messages": messages_data,
-                    "messages_count": len(result.get("messages", [])) if isinstance(result, dict) and "messages" in result else 0,
-                    "tool": f"amass_{tool_name}"
-                }
+                result_data = serialize_langchain_result(result)
                 result_file = save_test_result(f"amass_{tool_name}", "langchain", result_data, test_id)
                 print(f"📁 LangChain result saved to: {result_file}")
             except Exception as e:
@@ -801,7 +737,6 @@ def run_all_tests():
         # Test 3: CrewAI
         print(f"\n3. Testing {tool_name} CrewAI Agent Integration...")
         try:
-            llm = get_crewai_llm_from_env()
             agent = Agent(
                 role="OSINT Analyst",
                 goal=f"Perform OSINT operations using Amass {tool_name.title()}",
@@ -843,12 +778,8 @@ def run_all_tests():
             
             # Save result
             try:
-                result_data = {
-                    "status": "success",
-                    "agent_type": "crewai",
-                    "result": result,  # Complete result as-is, no truncation
-                    "tool": f"amass_{tool_name}"
-                }
+                # VERBATIM, no wrapper
+                result_data = serialize_crewai_result(result) if result else None
                 result_file = save_test_result(f"amass_{tool_name}", "crewai", result_data, test_id)
                 print(f"📁 CrewAI result saved to: {result_file}")
             except Exception as e:

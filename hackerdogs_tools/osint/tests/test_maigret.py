@@ -28,7 +28,7 @@ from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.test_identity_data import get_random_username
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestMaigretStandalone:
@@ -101,8 +101,8 @@ class TestMaigretLangChain:
     
     def test_maigret_langchain_agent(self, agent):
         """Test maigret tool with LangChain agent."""
-        # Use a test username (maigret searches for usernames)
-        test_username = "testuser123"
+        # Use a random realistic username (maigret searches for usernames)
+        test_username = get_random_username()
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
@@ -116,12 +116,7 @@ class TestMaigretLangChain:
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_username
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("maigret", "langchain", result_data, test_username)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -162,8 +157,8 @@ class TestMaigretCrewAI:
     
     def test_maigret_crewai_agent(self, agent, llm):
         """Test maigret tool with CrewAI agent."""
-        # Use a test username (maigret searches for usernames)
-        test_username = "testuser123"
+        # Use a random realistic username (maigret searches for usernames)
+        test_username = get_random_username()
         
         task = Task(
             description=f"Search for username {test_username} using Maigret",
@@ -186,13 +181,7 @@ class TestMaigretCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_username
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("maigret", "crewai", result_data, test_username)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -227,16 +216,16 @@ def run_all_tests():
     # Test 2: LangChain
     print("\n2. Testing LangChain Agent Integration...")
     try:
-        llm = get_llm_from_env()
         # Create agent directly (not using pytest fixtures)
+        llm = get_llm_from_env()
         tools = [maigret_search]
         agent = create_agent(
             model=llm,
             tools=tools,
             system_prompt="You are a cybersecurity analyst. Use the maigret tool for advanced username search."
         )
-        # Use a test username (maigret searches for usernames)
-        test_username = "testuser123"
+        # Use a random realistic username (maigret searches for usernames)
+        test_username = get_random_username()
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
@@ -250,12 +239,7 @@ def run_all_tests():
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_username
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("maigret", "langchain", result_data, test_username)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -272,8 +256,8 @@ def run_all_tests():
     # Test 3: CrewAI
     print("\n3. Testing CrewAI Agent Integration...")
     try:
-        llm = get_crewai_llm_from_env()
         # Create agent directly (not using pytest fixtures)
+        llm = get_crewai_llm_from_env()
         agent = Agent(
             role="OSINT Analyst",
             goal="Perform OSINT operations using maigret",
@@ -282,8 +266,8 @@ def run_all_tests():
             llm=llm,
             verbose=True
         )
-        # Use a test username (maigret searches for usernames)
-        test_username = "testuser123"
+        # Use a random realistic username (maigret searches for usernames)
+        test_username = get_random_username()
         
         task = Task(
             description=f"Search for username {test_username} using Maigret",
@@ -306,13 +290,7 @@ def run_all_tests():
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_username
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("maigret", "crewai", result_data, test_username)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:

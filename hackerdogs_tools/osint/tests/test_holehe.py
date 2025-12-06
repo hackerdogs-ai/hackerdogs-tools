@@ -28,7 +28,7 @@ from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.test_identity_data import get_random_email
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestHoleheStandalone:
@@ -115,12 +115,7 @@ class TestHoleheLangChain:
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_email.replace("@", "_at_")
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("holehe", "langchain", result_data, test_email.replace("@", "_at_"))
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -185,13 +180,7 @@ class TestHoleheCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_email.replace("@", "_at_")
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("holehe", "crewai", result_data, test_email.replace("@", "_at_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -226,8 +215,8 @@ def run_all_tests():
     # Test 2: LangChain
     print("\n2. Testing LangChain Agent Integration...")
     try:
-        llm = get_llm_from_env()
         # Create agent directly (not using pytest fixtures)
+        llm = get_llm_from_env()
         tools = [holehe_search]
         agent = create_agent(
             model=llm,
@@ -249,12 +238,7 @@ def run_all_tests():
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_email.replace("@", "_at_")
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("holehe", "langchain", result_data, test_email.replace("@", "_at_"))
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -271,8 +255,8 @@ def run_all_tests():
     # Test 3: CrewAI
     print("\n3. Testing CrewAI Agent Integration...")
     try:
-        llm = get_crewai_llm_from_env()
         # Create agent directly (not using pytest fixtures)
+        llm = get_crewai_llm_from_env()
         agent = Agent(
             role="OSINT Analyst",
             goal="Perform OSINT operations using holehe",
@@ -305,13 +289,7 @@ def run_all_tests():
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_email.replace("@", "_at_")
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("holehe", "crewai", result_data, test_email.replace("@", "_at_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:

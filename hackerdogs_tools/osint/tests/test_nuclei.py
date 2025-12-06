@@ -27,7 +27,7 @@ from hackerdogs_tools.osint.infrastructure.nuclei_crewai import NucleiTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestNucleiStandalone:
@@ -41,7 +41,7 @@ class TestNucleiStandalone:
         # Use a random real domain instead of reserved example.com
         # Use "good" domains if malicious domain files are missing
         try:
-            test_domain = get_random_domain("mixed")
+            pass
         except FileNotFoundError:
             # Fallback to good domains if malicious files are missing
             test_domain = get_random_domain("good")
@@ -116,7 +116,7 @@ class TestNucleiLangChain:
         # Use a random real domain instead of reserved example.com
         # Use "good" domains if malicious domain files are missing
         try:
-            test_domain = get_random_domain("mixed")
+            pass
         except FileNotFoundError:
             # Fallback to good domains if malicious files are missing
             test_domain = get_random_domain("good")
@@ -133,12 +133,7 @@ class TestNucleiLangChain:
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("nuclei", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -181,7 +176,7 @@ class TestNucleiCrewAI:
         # Use a random real domain instead of reserved example.com
         # Use "good" domains if malicious domain files are missing
         try:
-            test_domain = get_random_domain("mixed")
+            pass
         except FileNotFoundError:
             # Fallback to good domains if malicious files are missing
             test_domain = get_random_domain("good")
@@ -207,13 +202,7 @@ class TestNucleiCrewAI:
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("nuclei", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
@@ -247,8 +236,8 @@ def run_all_tests():
     # Test 2: LangChain
     print("\n2. Testing LangChain Agent Integration...")
     try:
-        llm = get_llm_from_env()
         # Create agent directly (not using pytest fixtures)
+        llm = get_llm_from_env()
         tools = [nuclei_scan]
         agent = create_agent(
             model=llm,
@@ -258,7 +247,7 @@ def run_all_tests():
         # Use a random real domain instead of reserved example.com
         # Use "good" domains if malicious domain files are missing
         try:
-            test_domain = get_random_domain("mixed")
+            pass
         except FileNotFoundError:
             # Fallback to good domains if malicious files are missing
             test_domain = get_random_domain("good")
@@ -275,12 +264,7 @@ def run_all_tests():
         
         # Save LangChain agent result - complete result as-is, no truncation, no decoration
         try:
-            result_data = {
-                "status": "success",
-                "agent_type": "langchain",
-                "result": result,  # Complete result dict as-is, no truncation, no decoration
-                "domain": test_domain
-            }
+            result_data = serialize_langchain_result(result)
             result_file = save_test_result("nuclei", "langchain", result_data, test_domain)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
@@ -297,8 +281,8 @@ def run_all_tests():
     # Test 3: CrewAI
     print("\n3. Testing CrewAI Agent Integration...")
     try:
-        llm = get_crewai_llm_from_env()
         # Create agent directly (not using pytest fixtures)
+        llm = get_crewai_llm_from_env()
         agent = Agent(
             role="Security Analyst",
             goal="Perform vulnerability scanning using nuclei",
@@ -310,7 +294,7 @@ def run_all_tests():
         # Use a random real domain instead of reserved example.com
         # Use "good" domains if malicious domain files are missing
         try:
-            test_domain = get_random_domain("mixed")
+            pass
         except FileNotFoundError:
             # Fallback to good domains if malicious files are missing
             test_domain = get_random_domain("good")
@@ -336,13 +320,7 @@ def run_all_tests():
         
         # Save CrewAI agent result - complete result as-is
         try:
-            from .save_json_results import serialize_crewai_result
-            result_data = {
-                "status": "success",
-                "agent_type": "crewai",
-                "result": serialize_crewai_result(result) if result else None,
-                "domain": test_domain
-            }
+            result_data = serialize_crewai_result(result) if result else None
             result_file = save_test_result("nuclei", "crewai", result_data, test_domain)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
