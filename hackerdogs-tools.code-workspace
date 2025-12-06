@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../crewai"
+		},
+		{
+			"path": "../langchain-community"
+		},
+		{
+			"path": "../blackbook"
+		},
+		{
+			"path": "../malicious-domains"
+		}
+	],
+	"settings": {}
+}

@@ -255,30 +255,17 @@ def virustotal_file_report(runtime: ToolRuntime, file_hash: str, details: bool =
 
         try:
             data = response.json()
-            file_data = data.get("data", {})
-            attributes = file_data.get("attributes", {})
-            stats = attributes.get("last_analysis_stats", {})
             
-            safe_log_info(logger, f"[virustotal_file_report] Successfully retrieved file report", hash=file_hash)
+            safe_log_info(logger, f"[virustotal_file_report] Successfully retrieved file report - returning raw API response verbatim", hash=file_hash)
             
-            # If details=True, return the complete raw API response
-            if details:
-                return json.dumps(data, indent=2)
-            
-            # Otherwise return summary format
-            threat_verdict = _calculate_threat_verdict(stats)
-            result = {
+            # Return raw API response verbatim - no parsing, no reformatting
+            result_data = {
                 "status": "success",
-                "hash": file_hash,
-                "last_analysis_date": attributes.get("last_analysis_date"),
-                "last_analysis_stats": stats,
-                "meaningful_name": attributes.get("meaningful_name"),
-                "size": attributes.get("size"),
-                "type_description": attributes.get("type_description"),
-                "threat_verdict": threat_verdict,
-                "user_id": runtime.state.get("user_id")
+                "raw_response": data,  # Raw API response as-is
+                "user_id": runtime.state.get("user_id", ""),
+                "note": "Raw API response returned verbatim - no parsing applied"
             }
-            return json.dumps(result, indent=2)
+            return json.dumps(result_data, indent=2)
             
         except (KeyError, ValueError, json.JSONDecodeError) as parse_error:
             error_msg = f"Error parsing VirusTotal API response: {str(parse_error)}"
@@ -435,28 +422,17 @@ def virustotal_url_report(runtime: ToolRuntime, url: str, details: bool = False)
 
         try:
             data = response.json()
-            url_data = data.get("data", {})
-            attributes = url_data.get("attributes", {})
-            stats = attributes.get("last_analysis_stats", {})
             
-            safe_log_info(logger, f"[virustotal_url_report] Successfully retrieved URL report", url=url)
+            safe_log_info(logger, f"[virustotal_url_report] Successfully retrieved URL report - returning raw API response verbatim", url=url)
             
-            # If details=True, return the complete raw API response
-            if details:
-                return json.dumps(data, indent=2)
-            
-            # Otherwise return summary format
-            threat_verdict = _calculate_threat_verdict(stats)
-            result = {
+            # Return raw API response verbatim - no parsing, no reformatting
+            result_data = {
                 "status": "success",
-                "url": url,
-                "last_analysis_date": attributes.get("last_analysis_date"),
-                "last_analysis_stats": stats,
-                "title": attributes.get("title"),
-                "threat_verdict": threat_verdict,
-                "user_id": runtime.state.get("user_id")
+                "raw_response": data,  # Raw API response as-is
+                "user_id": runtime.state.get("user_id", ""),
+                "note": "Raw API response returned verbatim - no parsing applied"
             }
-            return json.dumps(result, indent=2)
+            return json.dumps(result_data, indent=2)
             
         except (KeyError, ValueError, json.JSONDecodeError) as parse_error:
             error_msg = f"Error parsing VirusTotal API response: {str(parse_error)}"
@@ -617,27 +593,16 @@ def virustotal_domain_report(runtime: ToolRuntime, domain: str, details: bool = 
 
         try:
             data = response.json()
-            safe_log_info(logger, f"[virustotal_domain_report] Successfully retrieved domain report", domain=domain)
+            safe_log_info(logger, f"[virustotal_domain_report] Successfully retrieved domain report - returning raw API response verbatim", domain=domain)
             
-            domain_data = data.get("data", {})
-            attributes = domain_data.get("attributes", {})
-            stats = attributes.get("last_analysis_stats", {})
-            
-            # If details=True, return the complete raw API response
-            if details:
-                return json.dumps(data, indent=2)
-            
-            # Otherwise return summary format
-            threat_verdict = _calculate_threat_verdict(stats)
-            result = {
+            # Return raw API response verbatim - no parsing, no reformatting
+            result_data = {
                 "status": "success",
-                "domain": domain,
-                "last_analysis_date": attributes.get("last_analysis_date"),
-                "last_analysis_stats": stats,
-                "threat_verdict": threat_verdict,
-                "user_id": runtime.state.get("user_id")
+                "raw_response": data,  # Raw API response as-is
+                "user_id": runtime.state.get("user_id", ""),
+                "note": "Raw API response returned verbatim - no parsing applied"
             }
-            return json.dumps(result, indent=2)
+            return json.dumps(result_data, indent=2)
             
         except (KeyError, ValueError, json.JSONDecodeError) as parse_error:
             error_msg = f"Error parsing VirusTotal API response: {str(parse_error)}"
@@ -793,29 +758,16 @@ def virustotal_ip_report(runtime: ToolRuntime, ip_address: str, details: bool = 
 
         try:
             data = response.json()
-            safe_log_info(logger, f"[virustotal_ip_report] Successfully retrieved IP report", ip_address=ip_address)
+            safe_log_info(logger, f"[virustotal_ip_report] Successfully retrieved IP report - returning raw API response verbatim", ip_address=ip_address)
             
-            ip_data = data.get("data", {})
-            attributes = ip_data.get("attributes", {})
-            stats = attributes.get("last_analysis_stats", {})
-            
-            # If details=True, return the complete raw API response
-            if details:
-                return json.dumps(data, indent=2)
-            
-            # Otherwise return summary format
-            threat_verdict = _calculate_threat_verdict(stats)
-            result = {
+            # Return raw API response verbatim - no parsing, no reformatting
+            result_data = {
                 "status": "success",
-                "ip_address": ip_address,
-                "country": attributes.get("country"),
-                "asn": attributes.get("asn"),
-                "last_analysis_date": attributes.get("last_analysis_date"),
-                "last_analysis_stats": stats,
-                "threat_verdict": threat_verdict,
-                "user_id": runtime.state.get("user_id")
+                "raw_response": data,  # Raw API response as-is
+                "user_id": runtime.state.get("user_id", ""),
+                "note": "Raw API response returned verbatim - no parsing applied"
             }
-            return json.dumps(result, indent=2)
+            return json.dumps(result_data, indent=2)
             
         except (KeyError, ValueError, json.JSONDecodeError) as parse_error:
             error_msg = f"Error parsing VirusTotal API response: {str(parse_error)}"
@@ -958,24 +910,16 @@ def scan_url(runtime: ToolRuntime, url: str, details: bool = False) -> str:
 
         try:
             data = response.json()
-            safe_log_info(logger, f"[scan_url] Successfully submitted URL for scanning", url=url)
+            safe_log_info(logger, f"[scan_url] Successfully submitted URL for scanning - returning raw API response verbatim", url=url)
             
-            scan_data = data.get("data", {})
-            analysis_id = scan_data.get("id")
-            
-            # If details=True, return the complete raw API response
-            if details:
-                return json.dumps(data, indent=2)
-            
-            # Otherwise return summary format
-            result = {
+            # Return raw API response verbatim - no parsing, no reformatting
+            result_data = {
                 "status": "success",
-                "url": url,
-                "analysis_id": analysis_id,
-                "message": "URL submitted for scanning. Use get_analysis() with the analysis_id to check results once scanning completes.",
-                "user_id": runtime.state.get("user_id")
+                "raw_response": data,  # Raw API response as-is
+                "user_id": runtime.state.get("user_id", ""),
+                "note": "Raw API response returned verbatim - no parsing applied"
             }
-            return json.dumps(result, indent=2)
+            return json.dumps(result_data, indent=2)
             
         except (KeyError, ValueError, json.JSONDecodeError) as parse_error:
             error_msg = f"Error parsing VirusTotal API response: {str(parse_error)}"
@@ -1129,40 +1073,16 @@ def get_analysis(runtime: ToolRuntime, analysis_id: str, details: bool = False) 
 
         try:
             data = response.json()
-            safe_log_info(logger, f"[get_analysis] Successfully retrieved analysis results", analysis_id=analysis_id)
+            safe_log_info(logger, f"[get_analysis] Successfully retrieved analysis results - returning raw API response verbatim", analysis_id=analysis_id)
             
-            analysis_data = data.get("data", {})
-            attributes = analysis_data.get("attributes", {})
-            stats = attributes.get("stats", {})
-            analysis_status = attributes.get("status", "unknown")
-            
-            # If details=True, return the complete raw API response
-            if details:
-                return json.dumps(data, indent=2)
-            
-            # Otherwise return summary format
-            malicious = stats.get("malicious", 0)
-            suspicious = stats.get("suspicious", 0)
-            if malicious > 0:
-                threat_verdict = f"MALICIOUS ({malicious} detections)"
-            elif suspicious > 0:
-                threat_verdict = f"SUSPICIOUS ({suspicious} detections)"
-            elif stats.get("undetected", 0) > 0:
-                threat_verdict = "UNDETECTED"
-            else:
-                threat_verdict = "CLEAN"
-            
-            result = {
+            # Return raw API response verbatim - no parsing, no reformatting
+            result_data = {
                 "status": "success",
-                "analysis_id": analysis_id,
-                "analysis_status": analysis_status,
-                "stats": stats,
-                "threat_verdict": threat_verdict,
-                "scan_date": attributes.get("date"),
-                "message": f"Analysis {analysis_status}. {threat_verdict}",
-                "user_id": runtime.state.get("user_id")
+                "raw_response": data,  # Raw API response as-is
+                "user_id": runtime.state.get("user_id", ""),
+                "note": "Raw API response returned verbatim - no parsing applied"
             }
-            return json.dumps(result, indent=2)
+            return json.dumps(result_data, indent=2)
             
         except (KeyError, ValueError, json.JSONDecodeError) as parse_error:
             error_msg = f"Error parsing VirusTotal API response: {str(parse_error)}"

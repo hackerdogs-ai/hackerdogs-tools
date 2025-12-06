@@ -268,9 +268,43 @@ def maigret_search(
         results = {username: [] for username in usernames}
         total_count = 0
         
-        # Read raw JSON output if available (return verbatim, no parsing)
-        raw_json_results = {}
+        # For JSON format with single username: return the JSON file content directly, verbatim
+        if report_format == "json" and temp_dir and len(usernames) == 1:
+            try:
+                username = usernames[0]
+                json_file = None
+                # Try Maigret's naming pattern: report_{username}_{type}.json
+                if json_type == "simple":
+                    json_file = os.path.join(temp_dir, f"report_{username}_simple.json")
+                    # Fallback to old naming
+                    if not os.path.exists(json_file):
+                        json_file = os.path.join(temp_dir, f"{username}.json")
+                else:  # ndjson
+                    json_file = os.path.join(temp_dir, f"report_{username}_ndjson.json")
+                    # Fallback to old naming
+                    if not os.path.exists(json_file):
+                        json_file = os.path.join(temp_dir, f"{username}.ndjson")
+                
+                if json_file and os.path.exists(json_file):
+                    # Read raw JSON file and return directly, verbatim - no wrapper
+                    with open(json_file, 'r', encoding='utf-8') as f:
+                        json_content = f.read()
+                    # Cleanup temp directory
+                    if os.path.exists(temp_dir):
+                        try:
+                            shutil.rmtree(temp_dir)
+                        except Exception:
+                            pass
+                    # Return JSON file content directly, verbatim - no wrapper
+                    safe_log_info(logger, f"[maigret_search] Complete - returning JSON file content verbatim", usernames=usernames)
+                    return json_content
+            except Exception as e:
+                safe_log_error(logger, f"[maigret_search] Error reading JSON file: {str(e)}", exc_info=True)
+                # Fall through to wrapper format
+        
+        # For multiple usernames: return JSON files directly as dictionary (no wrapper)
         if report_format == "json" and temp_dir:
+            json_results = {}
             try:
                 # Look for JSON files in the output directory
                 # Maigret saves files as: report_{username}_{json_type}.json
@@ -289,95 +323,35 @@ def maigret_search(
                             json_file = os.path.join(temp_dir, f"{username}.ndjson")
                     
                     if os.path.exists(json_file):
-                        # Read raw JSON file and return as-is (verbatim)
+                        # Read raw JSON file and return as-is (verbatim, no parsing)
                         with open(json_file, 'r', encoding='utf-8') as f:
-                            if json_type == "simple":
-                                # Simple format: single JSON object
-                                raw_json_results[username] = json.load(f)
-                            else:  # ndjson
-                                # NDJSON format: one JSON object per line
-                                raw_json_results[username] = [json.loads(line) for line in f if line.strip()]
+                            json_results[username] = f.read()  # Return as raw string, not parsed
             except Exception as e:
-                safe_log_error(logger, f"[maigret_search] Error reading JSON: {str(e)}", exc_info=True)
+                safe_log_error(logger, f"[maigret_search] Error reading JSON files: {str(e)}", exc_info=True)
+            
+            # Cleanup temp directory
+            if os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception:
+                    pass
+            
+            # Return JSON files as dictionary mapping username to JSON content - no wrapper
+            if json_results:
+                safe_log_info(logger, f"[maigret_search] Complete - returning JSON files verbatim", usernames=usernames)
+                return json.dumps(json_results, indent=2)
         
-        # If we have raw JSON results, return them verbatim
-        if raw_json_results:
-            result_data = {
-                "status": "success",
-                "usernames": usernames,
-                "results": raw_json_results,  # Raw JSON as-is, no parsing/reformatting
-                "report_format": report_format,
-                "json_type": json_type,
-                "execution_method": docker_result.get("execution_method", "docker"),
-                "user_id": runtime.state.get("user_id", "")
-            }
-            safe_log_info(logger, f"[maigret_search] Complete - returning raw JSON", usernames=usernames)
-            return json.dumps(result_data, indent=2)
+        # For non-JSON formats or if JSON files not found: return stdout/stderr verbatim
+        # Cleanup temp directory
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
         
-        # Fallback: Parse stdout for results if JSON files not found or not using JSON format
-        results = {username: [] for username in usernames}
-        total_count = 0
-        
-        if stdout:
-            # Parse stdout text output
-            # Format: "[+] SiteName: URL" with optional metadata
-            for username in usernames:
-                # Look for sections for this username
-                username_pattern = rf'Checking username\s+{re.escape(username)}\s+on:'
-                if username_pattern in stdout:
-                    # Extract results for this username
-                    # Pattern: "[+] SiteName: URL" or "[+] SiteName: URL | metadata"
-                    pattern = rf'\[\+\]\s+([^:]+):\s+(https?://[^\s\|]+)(?:\s*\|\s*(.+))?'
-                    matches = re.findall(pattern, stdout)
-                    
-                    for site_name, url, metadata in matches:
-                        # Try to extract metadata from the metadata string or from following lines
-                        metadata_dict = {}
-                        if metadata:
-                            # Parse metadata like "id: 123, username: test"
-                            metadata_items = re.findall(r'(\w+):\s*([^\s,]+)', metadata)
-                            for key, value in metadata_items:
-                                metadata_dict[key] = value
-                        
-                        results[username].append({
-                            "name": site_name.strip(),
-                            "url": url,
-                            "urlMain": url,
-                            "exists": True,
-                            "metadata": metadata_dict
-                        })
-                        total_count += 1
-        
-        # If still no results, check if there's any output
-        if not any(results.values()) and stdout:
-            # Try to extract any found sites
-            for username in usernames:
-                if username in stdout:
-                    # Look for any [+] markers
-                    pattern = r'\[\+\]\s+([^:]+):\s+(https?://[^\s]+)'
-                    matches = re.findall(pattern, stdout)
-                    for site_name, url in matches:
-                        if username.lower() in url.lower():
-                            results[username].append({
-                                "name": site_name.strip(),
-                                "url": url,
-                                "urlMain": url,
-                                "exists": True
-                            })
-                            total_count += 1
-        
-        result_data = {
-            "status": "success",
-            "usernames": usernames,
-            "results": results,
-            "count": total_count,
-            "report_format": report_format,
-            "execution_method": docker_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[maigret_search] Complete", usernames=usernames, count=total_count)
-        return json.dumps(result_data, indent=2)
+        # Return stdout/stderr verbatim - no wrapper
+        safe_log_info(logger, f"[maigret_search] Complete - returning stdout verbatim", usernames=usernames)
+        return stdout if stdout else stderr
         
     except Exception as e:
         safe_log_error(logger, f"[maigret_search] Error: {str(e)}", exc_info=True)

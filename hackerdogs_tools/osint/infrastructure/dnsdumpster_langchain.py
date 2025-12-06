@@ -53,14 +53,8 @@ def dnsdumpster_search(
         # TODO: Implement tool-specific logic
         # This is a template - implement actual tool execution
         
-        result_data = {
-            "status": "success",
-            "message": "Tool execution not yet implemented",
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
         safe_log_info(logger, f"[dnsdumpster_search] Complete")
-        return json.dumps(result_data, indent=2)
+        return json.dumps({"status": "error", "message": "Tool execution not yet implemented"})
         
     except Exception as e:
         safe_log_error(logger, f"[dnsdumpster_search] Error: {str(e)}", exc_info=True)

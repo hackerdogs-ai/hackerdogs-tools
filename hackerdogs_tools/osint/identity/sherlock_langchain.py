@@ -165,231 +165,133 @@ def sherlock_enum(
             safe_log_error(logger, error_msg)
             return json.dumps({"status": "error", "message": error_msg})
         
-        # Parse output based on format
+        # Return raw output verbatim - no parsing, no reformatting
         stdout = docker_result.get("stdout", "")
         stderr = docker_result.get("stderr", "")
         
-        results = {}
-        total_count = 0
-        
-        # For JSON format, parse text output from stdout or file
-        # Note: Sherlock's --output with .json extension creates a text file with URLs, not JSON
-        # We parse the stdout text output to extract results
-        if output_format == "json":
-            # Parse stdout text output to extract results
-            # Format: "[*] Checking username X on:" followed by "[+] Site Name: URL"
-            import re
-            
-            # Split stdout by username sections
-            # Pattern: "[*] Checking username <username> on:"
-            username_section_pattern = r'\[\*\]\s+Checking username\s+(\w+)\s+on:'
-            
-            # Find all username sections
-            sections = re.finditer(username_section_pattern, stdout)
-            current_username = None
-            section_start = 0
-            
-            # Process each section
-            section_positions = []
-            for match in sections:
-                if current_username is not None:
-                    # Save previous section
-                    section_positions.append((current_username, section_start, match.start()))
-                current_username = match.group(1)
-                section_start = match.start()
-            
-            # Add last section
-            if current_username is not None:
-                section_positions.append((current_username, section_start, len(stdout)))
-            
-            # Extract results for each username section
-            for username, start_pos, end_pos in section_positions:
-                if username not in results:
-                    results[username] = []
-                
-                # Extract results from this section
-                section_text = stdout[start_pos:end_pos]
-                pattern = r'\[\+\]\s+([^:]+):\s+(https?://[^\s]+)'
-                matches = re.findall(pattern, section_text)
-                
-                for site_name, url in matches:
-                    results[username].append({
-                        "name": site_name.strip(),
-                        "url_main": url,
-                        "url_user": url,
-                        "exists": True,
-                        "http_status": 200,
-                        "response_time_ms": 0
-                    })
-                    total_count += 1
-            
-            # If no sections found (single username or different format), try simple parsing
-            if not section_positions and len(usernames) == 1:
-                username = usernames[0]
-                if username not in results:
-                    results[username] = []
-                
-                pattern = r'\[\+\]\s+([^:]+):\s+(https?://[^\s]+)'
-                matches = re.findall(pattern, stdout)
-                
-                for site_name, url in matches:
-                    if username.lower() in url.lower():
-                        results[username].append({
-                            "name": site_name.strip(),
-                            "url_main": url,
-                            "url_user": url,
-                            "exists": True,
-                            "http_status": 200,
-                            "response_time_ms": 0
-                        })
-                        total_count += 1
-            
-            # Also check the output file(s) if they exist (contains URLs)
-            if output_file_path:
+        # For JSON format with single file: return the JSON file content directly, verbatim
+        if output_format == "json" and output_file_path:
+            # Check if file exists
+            if os.path.exists(output_file_path) and os.path.isfile(output_file_path):
                 try:
-                    if len(usernames) == 1 and os.path.exists(output_file_path):
-                        # Single username - one file
-                        with open(output_file_path, 'r', encoding='utf-8') as f:
-                            file_content = f.read()
-                            username = usernames[0]
-                            if username not in results:
-                                results[username] = []
-                            
-                            # Extract URLs from file (one per line)
-                            for line in file_content.strip().split('\n'):
-                                line = line.strip()
-                                if line and (line.startswith('http://') or line.startswith('https://')):
-                                    # Try to extract site name from URL
-                                    domain = line.split('/')[2] if '/' in line else line
-                                    site_name = domain.split('.')[0] if '.' in domain else domain
-                                    
-                                    # Check if we already have this URL
-                                    if not any(r.get("url_user") == line for r in results[username]):
-                                        results[username].append({
-                                            "name": site_name,
-                                            "url_main": line,
-                                            "url_user": line,
-                                            "exists": True,
-                                            "http_status": 200,
-                                            "response_time_ms": 0
-                                        })
-                                        total_count += 1
-                    elif len(usernames) > 1 and os.path.exists(output_file_path):
-                        # Multiple usernames - check folder for individual files
-                        for username in usernames:
-                            username_file = os.path.join(output_file_path, f"{username}.json")
-                            if os.path.exists(username_file):
-                                with open(username_file, 'r', encoding='utf-8') as f:
-                                    file_content = f.read()
-                                    if username not in results:
-                                        results[username] = []
-                                    
-                                    # Extract URLs from file
-                                    for line in file_content.strip().split('\n'):
-                                        line = line.strip()
-                                        if line and (line.startswith('http://') or line.startswith('https://')):
-                                            domain = line.split('/')[2] if '/' in line else line
-                                            site_name = domain.split('.')[0] if '.' in domain else domain
-                                            
-                                            if not any(r.get("url_user") == line for r in results[username]):
-                                                results[username].append({
-                                                    "name": site_name,
-                                                    "url_main": line,
-                                                    "url_user": line,
-                                                    "exists": True,
-                                                    "http_status": 200,
-                                                    "response_time_ms": 0
-                                                })
-                                                total_count += 1
+                    with open(output_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        json_content = f.read()
+                    # Cleanup temp directory
+                    if os.path.exists(os.path.dirname(output_file_path)):
+                        try:
+                            import shutil
+                            shutil.rmtree(os.path.dirname(output_file_path))
+                        except Exception:
+                            pass
+                    # Return JSON file content directly, verbatim - no wrapper
+                    safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON file content verbatim", usernames=usernames)
+                    return json_content
                 except Exception as e:
-                    safe_log_error(logger, f"[sherlock_enum] Error reading output file: {str(e)}", exc_info=True)
-            
-            # Cleanup temp directory
-            if output_file_path and os.path.exists(os.path.dirname(output_file_path)):
+                    safe_log_error(logger, f"[sherlock_enum] Error reading JSON file: {str(e)}", exc_info=True)
+                    # Fall through to check directory
+            # If single file doesn't exist, check if it's in the temp directory
+            elif os.path.exists(os.path.dirname(output_file_path)):
+                temp_dir = os.path.dirname(output_file_path)
+                # Look for JSON file in temp directory
+                json_file = os.path.join(temp_dir, os.path.basename(output_file_path))
+                if os.path.exists(json_file) and os.path.isfile(json_file):
+                    try:
+                        with open(json_file, 'r', encoding='utf-8', errors='ignore') as f:
+                            json_content = f.read()
+                        # Cleanup temp directory
+                        try:
+                            import shutil
+                            shutil.rmtree(temp_dir)
+                        except Exception:
+                            pass
+                        # Return JSON file content directly, verbatim - no wrapper
+                        safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON file content verbatim", usernames=usernames)
+                        return json_content
+                    except Exception as e:
+                        safe_log_error(logger, f"[sherlock_enum] Error reading JSON file: {str(e)}", exc_info=True)
+                        # Fall through
+        
+        # For other formats or multiple files: return JSON files directly (no wrapper)
+        if output_format == "json" and output_file_path and os.path.exists(output_file_path):
+            # Multiple JSON files - return as dictionary mapping username to JSON content
+            if os.path.isdir(output_file_path):
+                json_results = {}
                 try:
-                    import shutil
-                    shutil.rmtree(os.path.dirname(output_file_path))
-                except Exception:
-                    pass
-        
-        elif output_format == "csv":
-            # Parse CSV output
-            try:
-                csv_reader = csv.DictReader(io.StringIO(stdout))
-                for row in csv_reader:
-                    username = row.get("username", "")
-                    if username not in results:
-                        results[username] = []
-                    results[username].append({
-                        "name": row.get("name", ""),
-                        "url_main": row.get("url_main", ""),
-                        "url_user": row.get("url_user", ""),
-                        "exists": row.get("exists", "").lower() == "true" if row.get("exists") else False,
-                        "http_status": int(row.get("http_status", 0)) if row.get("http_status") else 0,
-                        "response_time_ms": float(row.get("response_time_ms", 0)) if row.get("response_time_ms") else 0
-                    })
-                    if row.get("exists", "").lower() == "true":
-                        total_count += 1
-            except Exception as e:
-                safe_log_error(logger, f"[sherlock_enum] CSV parsing error: {str(e)}", exc_info=True)
-                # Fallback: try to extract from stdout text
-                for username in usernames:
-                    if username in stdout:
-                        results[username] = [{"raw_output": "Found in output", "exists": True}]
-                        total_count += 1
-        
-        elif output_format == "xlsx":
-            # XLSX output - Sherlock writes to file
-            if output_file_path:
-                # Check if file was created (for single username, it's the specific file; for multiple, check folder)
-                if len(usernames) == 1 and os.path.exists(output_file_path):
-                    safe_log_info(logger, "[sherlock_enum] XLSX file generated", file_path=output_file_path)
-                    results[usernames[0]] = [{"raw_output": "XLSX file generated", "file_path": output_file_path, "exists": True}]
-                    total_count += 1
-                elif len(usernames) > 1 and os.path.exists(os.path.dirname(output_file_path)):
-                    # Multiple usernames - check folder for individual files
-                    output_dir = os.path.dirname(output_file_path)
-                    for username in usernames:
-                        username_file = os.path.join(output_dir, f"{username}.xlsx")
-                        if os.path.exists(username_file):
-                            results[username] = [{"raw_output": "XLSX file generated", "file_path": username_file, "exists": True}]
-                            total_count += 1
+                    for file in os.listdir(output_file_path):
+                        file_path = os.path.join(output_file_path, file)
+                        if os.path.isfile(file_path) and file.endswith('.json'):
+                            # Extract username from filename (e.g., "username.json")
+                            username = file.replace('.json', '')
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                json_results[username] = f.read()
+                except Exception as e:
+                    safe_log_error(logger, f"[sherlock_enum] Error reading JSON files: {str(e)}", exc_info=True)
+                
                 # Cleanup temp directory
-                if output_file_path and os.path.exists(os.path.dirname(output_file_path)):
+                if os.path.exists(os.path.dirname(output_file_path)):
                     try:
                         import shutil
                         shutil.rmtree(os.path.dirname(output_file_path))
                     except Exception:
                         pass
-            else:
-                # Fallback: parse stdout/stderr for any text output
-                output_text = stdout + stderr
-                for username in usernames:
-                    if username in output_text:
-                        results[username] = [{"raw_output": "XLSX file generated", "exists": True}]
-                        total_count += 1
+                
+                # Return JSON files as dictionary - no wrapper metadata
+                safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON files verbatim", usernames=usernames)
+                return json.dumps(json_results, indent=2)
         
-        # If no results parsed, check if there's any output
-        if not results and stdout:
-            # Try to extract usernames from output
-            for username in usernames:
-                if username in stdout or username in stderr:
-                    results[username] = [{"raw_output": stdout[:500], "exists": True}]
-                    total_count += 1
+        # For CSV/XLSX or other formats: return stdout verbatim
+        # But first, check if JSON files were created in temp directory even if path check failed
+        if output_format == "json" and output_file_path:
+            temp_dir = os.path.dirname(output_file_path) if output_file_path else None
+            if temp_dir and os.path.exists(temp_dir):
+                # Look for any JSON files in the temp directory
+                try:
+                    json_files = [f for f in os.listdir(temp_dir) if f.endswith('.json')]
+                    if json_files:
+                        if len(json_files) == 1 and len(usernames) == 1:
+                            # Single JSON file - return it verbatim
+                            json_file = os.path.join(temp_dir, json_files[0])
+                            with open(json_file, 'r', encoding='utf-8', errors='ignore') as f:
+                                json_content = f.read()
+                            # Cleanup
+                            try:
+                                import shutil
+                                shutil.rmtree(temp_dir)
+                            except Exception:
+                                pass
+                            safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON file content verbatim", usernames=usernames)
+                            return json_content
+                        else:
+                            # Multiple JSON files - return as dict
+                            json_results = {}
+                            for json_file in json_files:
+                                file_path = os.path.join(temp_dir, json_file)
+                                username = json_file.replace('.json', '')
+                                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                    json_results[username] = f.read()
+                            # Cleanup
+                            try:
+                                import shutil
+                                shutil.rmtree(temp_dir)
+                            except Exception:
+                                pass
+                            safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON files verbatim", usernames=usernames)
+                            return json.dumps(json_results, indent=2)
+                except Exception as e:
+                    safe_log_error(logger, f"[sherlock_enum] Error checking temp directory: {str(e)}", exc_info=True)
         
-        result_data = {
-            "status": "success",
-            "usernames": usernames,
-            "results": results,
-            "count": total_count,
-            "output_format": output_format,
-            "execution_method": docker_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
+        # Cleanup temp directory
+        if output_file_path and os.path.exists(os.path.dirname(output_file_path)):
+            try:
+                import shutil
+                shutil.rmtree(os.path.dirname(output_file_path))
+            except Exception:
+                pass
         
-        safe_log_info(logger, f"[sherlock_enum] Complete", usernames=usernames, count=total_count)
-        return json.dumps(result_data, indent=2)
-        
+        # Return stdout/stderr verbatim - no wrapper
+        safe_log_info(logger, f"[sherlock_enum] Complete - returning stdout verbatim", usernames=usernames)
+        return stdout if stdout else stderr
+
     except Exception as e:
         safe_log_error(logger, f"[sherlock_enum] Error: {str(e)}", exc_info=True)
         return json.dumps({"status": "error", "message": f"Sherlock enumeration failed: {str(e)}"})

@@ -174,39 +174,13 @@ class AmassIntelTool(BaseTool):
                     "message": error_msg
                 })
             
-            # Step 3: Parse text output
-            domains = []
+            # Return raw output verbatim - no parsing, no reformatting
             stdout = subs_result.get("stdout", "")
-            for line in stdout.strip().split('\n'):
-                line = line.strip()
-                if not line:
-                    continue
-                
-                # Parse line: domain name
-                domain_name = line.split()[0] if line.split() else line
-                domains.append({
-                    "domain": domain_name,
-                    "ip": "",
-                    "source": []
-                })
+            stderr = subs_result.get("stderr", "")
             
-            result_data = {
-                "status": "success",
-                "query": {
-                    "org": org,
-                    "asn": asn,
-                    "cidr": cidr,
-                    "addr": addr
-                },
-                "domains": domains,
-                "domain_count": len(domains),
-                "execution_method": subs_result.get("execution_method", "docker")
-            }
+            safe_log_info(logger, f"[AmassIntelTool] Complete - returning raw output verbatim")
             
-            safe_log_info(logger, f"[AmassIntelTool] Intelligence gathering complete",
-                         domain_count=result_data["domain_count"])
-            
-            return json.dumps(result_data, indent=2)
+            return stdout if stdout else stderr
             
         except subprocess.TimeoutExpired:
             error_msg = f"Amass intel timed out after {timeout} seconds"
@@ -327,45 +301,11 @@ class AmassEnumTool(BaseTool):
                     "message": error_msg
                 })
             
-            # Step 3: Parse text output (one subdomain per line, or subdomain + IP)
-            subdomains = []
-            ips = []
-            sources_map = {}
-            
+            # Return raw output verbatim - no parsing, no reformatting
             stdout = subs_result.get("stdout", "")
-            for line in stdout.strip().split('\n'):
-                line = line.strip()
-                if not line:
-                    continue
-                
-                # Parse line: could be "subdomain" or "subdomain IP"
-                parts = line.split()
-                if len(parts) >= 1:
-                    subdomain = parts[0]
-                    subdomains.append(subdomain)
-                    
-                    # If IP is present, extract it
-                    if len(parts) >= 2 and show_ips:
-                        ip = parts[1]
-                        # Validate IP format
-                        if '.' in ip or ':' in ip:
-                            ips.append(ip)
+            stderr = subs_result.get("stderr", "")
             
-            result_data = {
-                "status": "success",
-                "domain": domain,
-                "subdomains": list(set(subdomains)),
-                "ip_addresses": list(set(ips)),
-                "subdomain_count": len(set(subdomains)),
-                "ip_count": len(set(ips)),
-                "sources": sources_map if show_sources else {},
-                "execution_method": subs_result.get("execution_method", "docker")
-            }
-            
-            safe_log_info(logger, f"[AmassEnumTool] Enumeration complete", 
-                         domain=domain, subdomain_count=result_data["subdomain_count"])
-            
-            return json.dumps(result_data, indent=2)
+            return stdout if stdout else stderr
             
         except subprocess.TimeoutExpired:
             error_msg = f"Amass enumeration timed out after {timeout} seconds"
@@ -583,21 +523,10 @@ class AmassVizTool(BaseTool):
                         except Exception as e:
                             safe_log_error(logger, f"[AmassVizTool] Error parsing GEXF: {str(e)}")
             
-            result_data = {
-                "status": "success",
-                "domain": domain,
-                "format": format,
-                "graph": graph_data,
-                "output_files": output_files,
-                "node_count": len(graph_data["nodes"]),
-                "edge_count": len(graph_data["edges"]),
-                "execution_method": docker_result.get("execution_method", "docker")
-            }
-            
             safe_log_info(logger, f"[AmassVizTool] Visualization complete",
                          domain=domain, node_count=result_data["node_count"])
             
-            return json.dumps(result_data, indent=2)
+            return stdout if stdout else stderr
             
         except subprocess.TimeoutExpired:
             error_msg = f"Amass viz timed out after {timeout} seconds"
@@ -690,32 +619,10 @@ class AmassTrackTool(BaseTool):
                 })
             
             stdout = docker_result.get("stdout", "")
+            stderr = docker_result.get("stderr", "")
             
-            # Parse track output (text format, not JSON)
-            new_assets = []
-            for line in stdout.strip().split('\n'):
-                if line.strip() and not line.startswith('.'):
-                    parts = line.strip().split()
-                    if parts:
-                        new_assets.append({
-                            "asset": parts[0],
-                            "discovered": True
-                        })
-            
-            result_data = {
-                "status": "success",
-                "domain": domain,
-                "since": since,
-                "new_assets": new_assets,
-                "new_asset_count": len(new_assets),
-                "raw_output": stdout,
-                "execution_method": docker_result.get("execution_method", "docker")
-            }
-            
-            safe_log_info(logger, f"[AmassTrackTool] Tracking complete",
-                         domain=domain, new_asset_count=result_data["new_asset_count"])
-            
-            return json.dumps(result_data, indent=2)
+            # Return raw output verbatim - no parsing, no reformatting
+            return stdout if stdout else stderr
             
         except subprocess.TimeoutExpired:
             error_msg = f"Amass track timed out after {timeout} seconds"

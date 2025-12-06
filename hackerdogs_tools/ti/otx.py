@@ -327,22 +327,15 @@ def otx_file_report(runtime: ToolRuntime, file_hash: str) -> str:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"OTX API response for file hash {file_hash[:8]}...: {json.dumps(result, indent=2)[:500]}")
         
-        # Extract general section for pulse info
-        general_section = result.get('general', {})
-        pulse_names = _extract_pulse_names(general_section)
-        threat_verdict = _calculate_threat_verdict_from_pulses(general_section)
-        
-        # Build response
+        # Return raw API response verbatim - no parsing, no reformatting
         response_data = {
             "status": "success",
-            "hash": file_hash,
-            "threat_verdict": threat_verdict,
-            "pulses": pulse_names,
-            "data": result,
-            "user_id": runtime.state.get("user_id", "")
+            "raw_response": result,  # Raw API response as-is
+            "user_id": runtime.state.get("user_id", ""),
+            "note": "Raw API response returned verbatim - no parsing applied"
         }
         
-        logger.info(f"File hash {file_hash[:8]}... verdict: {threat_verdict}, pulses: {len(pulse_names)}")
+        logger.info(f"File hash {file_hash[:8]}... - returning raw API response verbatim")
         
         return json.dumps(response_data, indent=2)
     
@@ -459,28 +452,15 @@ def otx_url_report(runtime: ToolRuntime, url: str) -> str:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"OTX API response for URL {url[:50]}...: {json.dumps(result, indent=2)[:500]}")
         
-        # Extract general section for pulse info
-        general_section = result.get('general', {})
-        pulse_names = _extract_pulse_names(general_section)
-        threat_verdict = _calculate_threat_verdict_from_pulses(general_section)
-        
-        # Check for additional threat indicators in url_list section
-        url_list_section = result.get('url_list', {})
-        google_safebrowsing = _get_nested_value(url_list_section, ['url_list', 'result', 'safebrowsing'])
-        if google_safebrowsing and 'response_code' in str(google_safebrowsing):
-            threat_verdict = "MALICIOUS"
-        
-        # Build response
+        # Return raw API response verbatim - no parsing, no reformatting
         response_data = {
             "status": "success",
-            "url": url,
-            "threat_verdict": threat_verdict,
-            "pulses": pulse_names,
-            "data": result,
-            "user_id": runtime.state.get("user_id", "")
+            "raw_response": result,  # Raw API response as-is
+            "user_id": runtime.state.get("user_id", ""),
+            "note": "Raw API response returned verbatim - no parsing applied"
         }
         
-        logger.info(f"URL {url[:50]}... verdict: {threat_verdict}, pulses: {len(pulse_names)}")
+        logger.info(f"URL {url[:50]}... - returning raw API response verbatim")
         
         return json.dumps(response_data, indent=2)
     
@@ -597,22 +577,15 @@ def otx_domain_report(runtime: ToolRuntime, domain: str) -> str:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"OTX API response for domain {domain}: {json.dumps(result, indent=2)[:500]}")
         
-        # Extract general section for pulse info
-        general_section = result.get('general', {})
-        pulse_names = _extract_pulse_names(general_section)
-        threat_verdict = _calculate_threat_verdict_from_pulses(general_section)
-        
-        # Build response
+        # Return raw API response verbatim - no parsing, no reformatting
         response_data = {
             "status": "success",
-            "domain": domain,
-            "threat_verdict": threat_verdict,
-            "pulses": pulse_names,
-            "data": result,
-            "user_id": runtime.state.get("user_id", "")
+            "raw_response": result,  # Raw API response as-is
+            "user_id": runtime.state.get("user_id", ""),
+            "note": "Raw API response returned verbatim - no parsing applied"
         }
         
-        logger.info(f"Domain {domain} verdict: {threat_verdict}, pulses: {len(pulse_names)}")
+        logger.info(f"Domain {domain} - returning raw API response verbatim")
         
         return json.dumps(response_data, indent=2)
     
@@ -740,17 +713,15 @@ def otx_ip_report(runtime: ToolRuntime, ip_address: str) -> str:
         pulse_names = _extract_pulse_names(general_section)
         threat_verdict = _calculate_threat_verdict_from_pulses(general_section)
         
-        # Build response
+        # Return raw API response verbatim - no parsing, no reformatting
         response_data = {
             "status": "success",
-            "ip_address": ip_address,
-            "threat_verdict": threat_verdict,
-            "pulses": pulse_names,
-            "data": result,
-            "user_id": runtime.state.get("user_id", "")
+            "raw_response": result,  # Raw API response as-is
+            "user_id": runtime.state.get("user_id", ""),
+            "note": "Raw API response returned verbatim - no parsing applied"
         }
         
-        logger.info(f"IP address {ip_address} verdict: {threat_verdict}, pulses: {len(pulse_names)}")
+        logger.info(f"IP address {ip_address} - returning raw API response verbatim")
         
         return json.dumps(response_data, indent=2)
     

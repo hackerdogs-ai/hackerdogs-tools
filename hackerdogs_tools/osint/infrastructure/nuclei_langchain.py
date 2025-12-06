@@ -113,27 +113,11 @@ def nuclei_scan(
             safe_log_error(logger, error_msg, returncode=returncode)
             return json.dumps({"status": "error", "message": error_msg, "returncode": returncode})
         
-        findings = []
         stdout = docker_result.get("stdout", "")
-        for line in stdout.strip().split('\n'):
-            if not line.strip():
-                continue
-            try:
-                findings.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+        stderr = docker_result.get("stderr", "")
         
-        result_data = {
-            "status": "success",
-            "target": target,
-            "findings": findings,
-            "count": len(findings),
-            "execution_method": docker_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[nuclei_scan] Complete", target=target, count=result_data["count"])
-        return json.dumps(result_data, indent=2)
+        # Return raw output verbatim - no parsing, no reformatting
+        return stdout if stdout else stderr
         
     except subprocess.TimeoutExpired:
         error_msg = "Nuclei scan timed out after 600 seconds"

@@ -173,44 +173,71 @@ def save_test_result(tool_name: str, test_type: str, result_data: dict, domain: 
         test_type: Type of test ("standalone", "langchain", "crewai") - used only for filename
         result_data: JSON data to save (can contain complex objects) - saved VERBATIM
         domain: Optional domain/test input for filename
+    
+    Returns:
+        Path to the saved file
+        
+    Raises:
+        OSError: If directory creation or file writing fails
+        TypeError: If result_data cannot be serialized
     """
-    # Ensure results directory exists
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # Create filename with timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    if domain:
-        # Sanitize domain for filename
-        safe_domain = domain.replace(".", "_").replace("/", "_")[:50]
-        filename = f"{tool_name}_{test_type}_{safe_domain}_{timestamp}.json"
-    else:
-        filename = f"{tool_name}_{test_type}_{timestamp}.json"
-    
-    filepath = RESULTS_DIR / filename
-    
-    # Serialize result_data properly according to test type
-    if test_type == "langchain" and "result" in result_data:
-        # Special serialization for LangChain tests
-        serialized_result_data = result_data.copy()
-        result_value = serialized_result_data["result"]
-        if isinstance(result_value, dict):
-            serialized_result_data["result"] = serialize_langchain_result(result_value)
-        elif hasattr(result_value, 'model_dump'):
-            serialized_result_data["result"] = serialize_langchain_result(result_value)
-        output = {
-            "tool": tool_name,
-            "test_type": test_type,
-            "timestamp": timestamp,
-            "domain": domain,
-            "result": serialized_result_data
-        }
-        with open(filepath, 'w') as f:
-            json.dump(output, f, indent=2, default=str, ensure_ascii=False)
-    else:
-        # General (standalone/crewai/other) case: Save VERBATIM, no wrappers, direct serialization
-        serialized_result = serialize_object(result_data)
-        with open(filepath, 'w') as f:
-            json.dump(serialized_result, f, indent=2, cls=CustomJSONEncoder, ensure_ascii=False)
-    
-    return filepath
+    try:
+        # Ensure results directory exists
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        
+        # Verify directory was created and is writable
+        if not RESULTS_DIR.exists():
+            raise OSError(f"Failed to create results directory: {RESULTS_DIR}")
+        if not RESULTS_DIR.is_dir():
+            raise OSError(f"Results path exists but is not a directory: {RESULTS_DIR}")
+        
+        # Create filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if domain:
+            # Sanitize domain for filename
+            safe_domain = domain.replace(".", "_").replace("/", "_")[:50]
+            filename = f"{tool_name}_{test_type}_{safe_domain}_{timestamp}.json"
+        else:
+            filename = f"{tool_name}_{test_type}_{timestamp}.json"
+        
+        filepath = RESULTS_DIR / filename
+        
+        # Serialize result_data properly according to test type
+        if test_type == "langchain" and "result" in result_data:
+            # Special serialization for LangChain tests
+            serialized_result_data = result_data.copy()
+            result_value = serialized_result_data["result"]
+            if isinstance(result_value, dict):
+                serialized_result_data["result"] = serialize_langchain_result(result_value)
+            elif hasattr(result_value, 'model_dump'):
+                serialized_result_data["result"] = serialize_langchain_result(result_value)
+            output = {
+                "tool": tool_name,
+                "test_type": test_type,
+                "timestamp": timestamp,
+                "domain": domain,
+                "result": serialized_result_data
+            }
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(output, f, indent=2, default=str, ensure_ascii=False)
+        else:
+            # General (standalone/crewai/other) case: Save VERBATIM, no wrappers, direct serialization
+            serialized_result = serialize_object(result_data)
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(serialized_result, f, indent=2, cls=CustomJSONEncoder, ensure_ascii=False)
+        
+        # Verify file was actually written
+        if not filepath.exists():
+            raise OSError(f"File was not created: {filepath}")
+        if filepath.stat().st_size == 0:
+            raise OSError(f"File was created but is empty: {filepath}")
+        
+        return filepath
+        
+    except (OSError, IOError) as e:
+        raise OSError(f"Failed to save test result to {RESULTS_DIR}: {e}") from e
+    except (TypeError, ValueError) as e:
+        raise TypeError(f"Failed to serialize result_data: {e}") from e
+    except Exception as e:
+        raise RuntimeError(f"Unexpected error saving test result: {e}") from e
 

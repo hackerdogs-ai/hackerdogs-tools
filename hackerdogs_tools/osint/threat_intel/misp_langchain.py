@@ -116,19 +116,9 @@ def misp_search(
             events = []
             attributes = []
         
-        result_data = {
-            "status": "success",
-            "query": query,
-            "query_type": query_type,
-            "event_count": len(events),
-            "attribute_count": len(attributes),
-            "events": events[:limit],
-            "attributes": attributes[:limit],
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[misp_search] Complete", query=query, event_count=result_data["event_count"])
-        return json.dumps(result_data, indent=2)
+        # Return raw API response verbatim - no parsing, no reformatting
+        safe_log_info(logger, f"[misp_search] Complete", query=query, event_count=len(events))
+        return json.dumps(results, indent=2, default=str)
         
     except Exception as e:
         safe_log_error(logger, f"[misp_search] Error: {str(e)}", exc_info=True)

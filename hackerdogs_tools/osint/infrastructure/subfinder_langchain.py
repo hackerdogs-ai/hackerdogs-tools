@@ -139,35 +139,11 @@ def subfinder_enum(
             safe_log_error(logger, error_msg)
             return json.dumps({"status": "error", "message": error_msg})
         
-        subdomains = []
         stdout = docker_result.get("stdout", "")
+        stderr = docker_result.get("stderr", "")
         
-        # Parse JSON output (one JSON object per line)
-        for line in stdout.strip().split('\n'):
-            if not line.strip():
-                continue
-            try:
-                data = json.loads(line)
-                if 'host' in data:
-                    subdomains.append(data['host'])
-            except json.JSONDecodeError:
-                # If not JSON, might be plain text subdomain
-                line_clean = line.strip()
-                if line_clean and '.' in line_clean:
-                    subdomains.append(line_clean)
-                continue
-        
-        result_data = {
-            "status": "success",
-            "domain": domain,
-            "subdomains": list(set(subdomains)),
-            "count": len(set(subdomains)),
-            "execution_method": docker_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[subfinder_enum] Complete", domain=domain, count=result_data["count"])
-        return json.dumps(result_data, indent=2)
+        # Return raw output verbatim - no parsing, no reformatting
+        return stdout if stdout else stderr
         
     except subprocess.TimeoutExpired:
         return json.dumps({"status": "error", "message": "Subfinder timed out"})

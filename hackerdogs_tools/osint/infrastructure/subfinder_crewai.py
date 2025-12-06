@@ -129,26 +129,11 @@ class SubfinderTool(BaseTool):
                     "message": docker_result.get("stderr", docker_result.get("message", "Unknown error"))
                 })
             
-            subdomains = []
             stdout = docker_result.get("stdout", "")
-            for line in stdout.strip().split('\n'):
-                if line.strip():
-                    try:
-                        data = json.loads(line)
-                        if 'host' in data:
-                            subdomains.append(data['host'])
-                    except json.JSONDecodeError:
-                        continue
+            stderr = docker_result.get("stderr", "")
             
-            result_data = {
-                "status": "success",
-                "domain": domain,
-                "subdomains": list(set(subdomains)),
-                "count": len(set(subdomains)),
-                "execution_method": docker_result.get("execution_method", "docker")
-            }
-            
-            return json.dumps(result_data, indent=2)
+            # Return raw output verbatim - no parsing, no reformatting
+            return stdout if stdout else stderr
             
         except Exception as e:
             safe_log_error(logger, f"[SubfinderTool] Error: {str(e)}", exc_info=True)

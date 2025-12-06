@@ -96,25 +96,9 @@ def otx_search(
         
         result = otx.get_indicator_details_full(otx_type, indicator)
         
-        # Extract pulse information
-        pulses = result.get("pulse_info", {}).get("pulses", [])
-        pulse_names = [p.get("name", "") for p in pulses if isinstance(p, dict)]
-        
-        threat_verdict = "MALICIOUS" if pulses else "CLEAN"
-        
-        result_data = {
-            "status": "success",
-            "indicator": indicator,
-            "indicator_type": indicator_type,
-            "threat_verdict": threat_verdict,
-            "pulse_count": len(pulses),
-            "pulses": pulse_names[:10],  # Limit to first 10
-            "validation": result.get("validation", None),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[otx_search] Complete", indicator=indicator, verdict=threat_verdict)
-        return json.dumps(result_data, indent=2)
+        # Return raw API response verbatim - no parsing, no reformatting
+        safe_log_info(logger, f"[otx_search] Complete - returning raw API response verbatim", indicator=indicator)
+        return json.dumps(result, indent=2, default=str)
         
     except Exception as e:
         safe_log_error(logger, f"[otx_search] Error: {str(e)}", exc_info=True)

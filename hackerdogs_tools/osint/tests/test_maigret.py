@@ -43,12 +43,12 @@ class TestMaigretStandalone:
         test_username = get_random_username()
         
         # Tools are StructuredTool objects - use invoke() method
-        # Maigret requires "username" parameter, not "domain"
+        # Maigret requires "usernames" parameter (list), not "username"
         result = maigret_search.invoke({
             "runtime": runtime,
-            "username": test_username,
-            "extract_metadata": True,
-            "sites": None
+            "usernames": [test_username],  # Must be a list
+            "report_format": "json",
+            "json_type": "simple"
         })
         
         # Parse result
@@ -62,17 +62,29 @@ class TestMaigretStandalone:
         print("=" * 80 + "\n")
         
         # Save JSON result to file - VERBATIM without wrappers
-        result_file = save_test_result("maigret", "standalone", result_data, test_username)
-        print(f"📁 JSON result saved to: {result_file}")
+        try:
+            result_file = save_test_result("maigret", "standalone", result_data, test_username)
+            print(f"📁 JSON result saved to: {result_file}")
+            # Verify file exists
+            if not os.path.exists(result_file):
+                print(f"⚠️  WARNING: File was not created: {result_file}")
+            else:
+                file_size = os.path.getsize(result_file)
+                print(f"✅ File verified: {result_file} ({file_size} bytes)")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to save result file: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
         
         # Assertions
         assert "status" in result_data, f"Missing 'status' in result: {result_data}"
         assert result_data["status"] in ["success", "error"], f"Invalid status: {result_data.get('status')}"
         
         if result_data["status"] == "success":
-            assert "username" in result_data, f"Missing 'username' in result: {result_data}"
+            assert "usernames" in result_data, f"Missing 'usernames' in result: {result_data}"
             print(f"✅ Tool executed successfully")
-            print(f"   Username: {result_data.get('username')}")
+            print(f"   Usernames: {result_data.get('usernames')}")
             print(f"   Execution method: {result_data.get('execution_method', 'docker')}")
         else:
             # If error, should have message
@@ -119,10 +131,17 @@ class TestMaigretLangChain:
             result_data = serialize_langchain_result(result)
             result_file = save_test_result("maigret", "langchain", result_data, test_username)
             print(f"📁 LangChain result saved to: {result_file}")
+            # Verify file exists
+            if not os.path.exists(result_file):
+                print(f"⚠️  WARNING: File was not created: {result_file}")
+            else:
+                file_size = os.path.getsize(result_file)
+                print(f"✅ File verified: {result_file} ({file_size} bytes)")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"❌ ERROR: Could not save LangChain result: {e}")
             import traceback
             traceback.print_exc()
+            raise
         
                 
         # Print agent result for verification
@@ -182,12 +201,22 @@ class TestMaigretCrewAI:
         # Save CrewAI agent result - complete result as-is
         try:
             result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("maigret", "crewai", result_data, test_username)
-            print(f"📁 CrewAI result saved to: {result_file}")
+            if result_data is None:
+                print("⚠️  WARNING: result_data is None, cannot save")
+            else:
+                result_file = save_test_result("maigret", "crewai", result_data, test_username)
+                print(f"📁 CrewAI result saved to: {result_file}")
+                # Verify file exists
+                if not os.path.exists(result_file):
+                    print(f"⚠️  WARNING: File was not created: {result_file}")
+                else:
+                    file_size = os.path.getsize(result_file)
+                    print(f"✅ File verified: {result_file} ({file_size} bytes)")
         except Exception as e:
-            print(f"⚠️  Could not save CrewAI result: {e}")
+            print(f"❌ ERROR: Could not save CrewAI result: {e}")
             import traceback
             traceback.print_exc()
+            raise
         
                 
         # Print CrewAI result for verification
@@ -242,10 +271,17 @@ def run_all_tests():
             result_data = serialize_langchain_result(result)
             result_file = save_test_result("maigret", "langchain", result_data, test_username)
             print(f"📁 LangChain result saved to: {result_file}")
+            # Verify file exists
+            if not os.path.exists(result_file):
+                print(f"⚠️  WARNING: File was not created: {result_file}")
+            else:
+                file_size = os.path.getsize(result_file)
+                print(f"✅ File verified: {result_file} ({file_size} bytes)")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"❌ ERROR: Could not save LangChain result: {e}")
             import traceback
             traceback.print_exc()
+            raise
         
         print(f"✅ LangChain test passed")
     except Exception as e:
@@ -291,12 +327,22 @@ def run_all_tests():
         # Save CrewAI agent result - complete result as-is
         try:
             result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("maigret", "crewai", result_data, test_username)
-            print(f"📁 CrewAI result saved to: {result_file}")
+            if result_data is None:
+                print("⚠️  WARNING: result_data is None, cannot save")
+            else:
+                result_file = save_test_result("maigret", "crewai", result_data, test_username)
+                print(f"📁 CrewAI result saved to: {result_file}")
+                # Verify file exists
+                if not os.path.exists(result_file):
+                    print(f"⚠️  WARNING: File was not created: {result_file}")
+                else:
+                    file_size = os.path.getsize(result_file)
+                    print(f"✅ File verified: {result_file} ({file_size} bytes)")
         except Exception as e:
-            print(f"⚠️  Could not save CrewAI result: {e}")
+            print(f"❌ ERROR: Could not save CrewAI result: {e}")
             import traceback
             traceback.print_exc()
+            raise
         
         print(f"✅ CrewAI test passed")
     except Exception as e:

@@ -197,40 +197,12 @@ def amass_intel(
                 "message": error_msg
             })
         
-        # Step 3: Parse text output
-        domains = []
+        # Return raw output verbatim - no parsing, no reformatting
         stdout = subs_result.get("stdout", "")
-        for line in stdout.strip().split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            
-            # Parse line: domain name
-            domain_name = line.split()[0] if line.split() else line
-            domains.append({
-                "domain": domain_name,
-                "ip": "",
-                "source": []
-            })
+        stderr = subs_result.get("stderr", "")
         
-        result_data = {
-            "status": "success",
-            "query": {
-                "org": org,
-                "asn": asn,
-                "cidr": cidr,
-                "addr": addr
-            },
-            "domains": domains,
-            "domain_count": len(domains),
-            "execution_method": subs_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[amass_intel] Intelligence gathering complete",
-                     domain_count=result_data["domain_count"])
-        
-        return json.dumps(result_data, indent=2)
+        safe_log_info(logger, f"[amass_intel] Complete - returning raw output verbatim")
+        return stdout if stdout else stderr
         
     except subprocess.TimeoutExpired:
         error_msg = f"Amass intel timed out after {timeout} seconds"
@@ -357,46 +329,11 @@ def amass_enum(
                 "message": error_msg
             })
         
-        # Step 3: Parse text output (one subdomain per line, or subdomain + IP)
-        subdomains = []
-        ips = []
-        sources_map = {}
-        
+        # Return raw output verbatim - no parsing, no reformatting
         stdout = subs_result.get("stdout", "")
-        for line in stdout.strip().split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            
-            # Parse line: could be "subdomain" or "subdomain IP"
-            parts = line.split()
-            if len(parts) >= 1:
-                subdomain = parts[0]
-                subdomains.append(subdomain)
-                
-                # If IP is present, extract it
-                if len(parts) >= 2 and show_ips:
-                    ip = parts[1]
-                    # Validate IP format
-                    if '.' in ip or ':' in ip:
-                        ips.append(ip)
+        stderr = subs_result.get("stderr", "")
         
-        result_data = {
-            "status": "success",
-            "domain": domain,
-            "subdomains": list(set(subdomains)),
-            "ip_addresses": list(set(ips)),
-            "subdomain_count": len(set(subdomains)),
-            "ip_count": len(set(ips)),
-            "sources": sources_map if show_sources else {},
-            "execution_method": subs_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[amass_enum] Enumeration complete", 
-                     domain=domain, subdomain_count=result_data["subdomain_count"])
-        
-        return json.dumps(result_data, indent=2)
+        return stdout if stdout else stderr
         
     except subprocess.TimeoutExpired:
         error_msg = f"Amass enumeration timed out after {timeout} seconds"
@@ -518,131 +455,24 @@ def amass_viz(
                 "message": error_msg
             })
         
-        # Read generated files and convert to JSON
-        graph_data = {
-            "nodes": [],
-            "edges": [],
-            "metadata": {
-                "domain": domain,
-                "format": format,
-                "output_dir": output_dir
-            }
-        }
+        # Return raw output verbatim - no parsing, no reformatting
+        stdout = docker_result.get("stdout", "")
+        stderr = docker_result.get("stderr", "")
         
-        # Try to find generated files
-        output_files = []
-        for ext in [".html", ".dot", ".gexf"]:
+        # Find generated files and return their paths and raw contents
+        output_files = {}
+        if os.path.exists(output_dir):
             for file in os.listdir(output_dir):
-                if file.endswith(ext):
-                    output_files.append(os.path.join(output_dir, file))
-        
-        # Parse D3 HTML to extract graph data
-        if format.lower() == "d3" or format.lower() == "json":
-            for file_path in output_files:
-                if file_path.endswith(".html"):
+                file_path = os.path.join(output_dir, file)
+                if os.path.isfile(file_path):
                     try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            html_content = f.read()
-                            # Extract JSON data from D3 HTML
-                            # D3 HTML typically contains data in script tags
-                            import re
-                            # Look for JSON data in script tags - use more robust pattern
-                            # Try multiple patterns to handle different D3 HTML formats
-                            patterns = [
-                                r'var\s+data\s*=\s*(\{.*?\});',  # var data = {...};
-                                r'data\s*=\s*(\{.*?\});',  # data = {...};
-                                r'const\s+data\s*=\s*(\{.*?\});',  # const data = {...};
-                                r'let\s+data\s*=\s*(\{.*?\});',  # let data = {...};
-                            ]
-                            graph_json = None
-                            for pattern in patterns:
-                                json_match = re.search(pattern, html_content, re.DOTALL)
-                                if json_match:
-                                    try:
-                                        graph_json = json.loads(json_match.group(1))
-                                        break
-                                    except json.JSONDecodeError:
-                                        continue
-                            
-                            if graph_json:
-                                graph_data["nodes"] = graph_json.get("nodes", [])
-                                graph_data["edges"] = graph_json.get("links", graph_json.get("edges", []))
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            output_files[file] = f.read()
                     except Exception as e:
-                        safe_log_error(logger, f"[amass_viz] Error parsing HTML: {str(e)}")
+                        safe_log_error(logger, f"[amass_viz] Error reading file {file}: {str(e)}")
+                        output_files[file] = f"Error reading file: {str(e)}"
         
-        # Parse DOT format
-        elif format.lower() == "dot":
-            for file_path in output_files:
-                if file_path.endswith(".dot"):
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            dot_content = f.read()
-                            # Simple DOT parser - extract nodes and edges
-                            # Format: "node1" -> "node2"
-                            import re
-                            nodes = set()
-                            edges = []
-                            for line in dot_content.split('\n'):
-                                # Match node definitions
-                                node_match = re.search(r'"([^"]+)"', line)
-                                if node_match:
-                                    nodes.add(node_match.group(1))
-                                # Match edges
-                                edge_match = re.search(r'"([^"]+)"\s*->\s*"([^"]+)"', line)
-                                if edge_match:
-                                    edges.append({
-                                        "source": edge_match.group(1),
-                                        "target": edge_match.group(2)
-                                    })
-                            graph_data["nodes"] = [{"id": n, "label": n} for n in nodes]
-                            graph_data["edges"] = edges
-                    except Exception as e:
-                        safe_log_error(logger, f"[amass_viz] Error parsing DOT: {str(e)}")
-        
-        # Parse GEXF format
-        elif format.lower() == "gexf":
-            for file_path in output_files:
-                if file_path.endswith(".gexf"):
-                    try:
-                        import xml.etree.ElementTree as ET
-                        tree = ET.parse(file_path)
-                        root = tree.getroot()
-                        # GEXF structure: graph -> nodes, edges
-                        graph_elem = root.find('.//{http://www.gexf.net/1.2}graph')
-                        if graph_elem is not None:
-                            # Extract nodes
-                            for node in graph_elem.findall('.//{http://www.gexf.net/1.2}node'):
-                                node_id = node.get('id')
-                                label = node.find('.//{http://www.gexf.net/1.2}label')
-                                graph_data["nodes"].append({
-                                    "id": node_id,
-                                    "label": label.text if label is not None else node_id
-                                })
-                            # Extract edges
-                            for edge in graph_elem.findall('.//{http://www.gexf.net/1.2}edge'):
-                                graph_data["edges"].append({
-                                    "source": edge.get('source'),
-                                    "target": edge.get('target')
-                                })
-                    except Exception as e:
-                        safe_log_error(logger, f"[amass_viz] Error parsing GEXF: {str(e)}")
-        
-        result_data = {
-            "status": "success",
-            "domain": domain,
-            "format": format,
-            "graph": graph_data,
-            "output_files": output_files,
-            "node_count": len(graph_data["nodes"]),
-            "edge_count": len(graph_data["edges"]),
-            "execution_method": docker_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[amass_viz] Visualization complete",
-                     domain=domain, node_count=result_data["node_count"])
-        
-        return json.dumps(result_data, indent=2)
+        return stdout if stdout else stderr
         
     except subprocess.TimeoutExpired:
         error_msg = f"Amass viz timed out after {timeout} seconds"
@@ -733,35 +563,10 @@ def amass_track(
             })
         
         stdout = docker_result.get("stdout", "")
+        stderr = docker_result.get("stderr", "")
         
-        # Parse track output (text format, not JSON)
-        # Track output shows newly discovered assets
-        new_assets = []
-        for line in stdout.strip().split('\n'):
-            if line.strip() and not line.startswith('.'):
-                # Extract domain names from output
-                parts = line.strip().split()
-                if parts:
-                    new_assets.append({
-                        "asset": parts[0],
-                        "discovered": True
-                    })
-        
-        result_data = {
-            "status": "success",
-            "domain": domain,
-            "since": since,
-            "new_assets": new_assets,
-            "new_asset_count": len(new_assets),
-            "raw_output": stdout,
-            "execution_method": docker_result.get("execution_method", "docker"),
-            "user_id": runtime.state.get("user_id", "")
-        }
-        
-        safe_log_info(logger, f"[amass_track] Tracking complete",
-                     domain=domain, new_asset_count=result_data["new_asset_count"])
-        
-        return json.dumps(result_data, indent=2)
+        # Return raw output verbatim - no parsing, no reformatting
+        return stdout if stdout else stderr
         
     except subprocess.TimeoutExpired:
         error_msg = f"Amass track timed out after {timeout} seconds"

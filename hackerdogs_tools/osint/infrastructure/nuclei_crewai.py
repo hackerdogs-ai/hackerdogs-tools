@@ -108,24 +108,11 @@ class NucleiTool(BaseTool):
                     "returncode": returncode
                 })
             
-            findings = []
             stdout = docker_result.get("stdout", "")
-            for line in stdout.strip().split('\n'):
-                if line.strip():
-                    try:
-                        findings.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        continue
+            stderr = docker_result.get("stderr", "")
             
-            result_data = {
-                "status": "success",
-                "target": target,
-                "findings": findings,
-                "count": len(findings),
-                "execution_method": docker_result.get("execution_method", "docker")
-            }
-            
-            return json.dumps(result_data, indent=2)
+            # Return raw output verbatim - no parsing, no reformatting
+            return stdout if stdout else stderr
             
         except subprocess.TimeoutExpired:
             error_msg = "Nuclei scan timed out after 600 seconds"

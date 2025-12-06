@@ -94,24 +94,9 @@ class OTXTool(BaseTool):
                     "message": f"Unsupported indicator type: {indicator_type}"
                 })
             
-            # Extract pulse information
-            pulses = result.get("pulse_info", {}).get("pulses", [])
-            pulse_names = [p.get("name", "") for p in pulses if isinstance(p, dict)]
-            
-            threat_verdict = "MALICIOUS" if pulses else "CLEAN"
-            
-            result_data = {
-                "status": "success",
-                "indicator": indicator,
-                "indicator_type": indicator_type,
-                "threat_verdict": threat_verdict,
-                "pulse_count": len(pulses),
-                "pulses": pulse_names,
-                "validation": result.get("validation", None)
-            }
-            
-            safe_log_info(logger, f"[OTXTool] Query complete", indicator=indicator, verdict=threat_verdict)
-            return json.dumps(result_data, indent=2)
+            # Return raw API response verbatim - no parsing, no reformatting
+            safe_log_info(logger, f"[OTXTool] Complete - returning raw API response verbatim", indicator=indicator)
+            return json.dumps(result, indent=2, default=str)
             
         except Exception as e:
             safe_log_error(logger, f"[OTXTool] Error: {str(e)}", exc_info=True)
