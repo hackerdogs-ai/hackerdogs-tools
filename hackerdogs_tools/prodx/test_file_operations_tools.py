@@ -41,8 +41,6 @@ try:
         _decode_file_input,
         _encode_file_output
     )
-except ImportError:
-    # Fallback for direct execution
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
@@ -52,6 +50,8 @@ except ImportError:
         _decode_file_input,
         _encode_file_output
     )
+except Exception:
+    pass
 
 
 class TestHelperFunctions:

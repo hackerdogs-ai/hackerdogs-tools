@@ -71,34 +71,35 @@ try:
         SaveFileForDownloadTool,
         ConvertFileFormatTool
     )
-except ImportError:
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-        from hackerdogs_tools.prodx.excel_tools import (
+    from hackerdogs_tools.prodx.excel_tools import (
         ReadExcelStructuredTool,
         ModifyExcelTool,
         CreateExcelChartTool,
         AnalyzeExcelSecurityTool
     )
-        from hackerdogs_tools.prodx.powerpoint_tools import (
+    from hackerdogs_tools.prodx.powerpoint_tools import (
         CreatePresentationTool,
         AddSlideTool,
         AddChartToSlideTool
     )
-        from hackerdogs_tools.prodx.visualization_tools import (
+    from hackerdogs_tools.prodx.visualization_tools import (
         CreatePlotlyChartTool,
         CreateChartFromFileTool
     )
-        from hackerdogs_tools.prodx.ocr_tools import (
+    from hackerdogs_tools.prodx.ocr_tools import (
         ExtractTextFromImageTool,
         ExtractTextFromPDFImagesTool,
         AnalyzeDocumentStructureTool
     )
-        from hackerdogs_tools.prodx.file_operations_tools import (
+    from hackerdogs_tools.prodx.file_operations_tools import (
         SaveFileForDownloadTool,
         ConvertFileFormatTool
     )
+except Exception:
+    pass
 
 
 class TestEndToEndWorkflows:

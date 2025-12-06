@@ -21,8 +21,6 @@ try:
         CreateChartFromFileTool,
         _to_dataframe
     )
-except ImportError:
-    # Fallback for direct execution
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
@@ -31,6 +29,8 @@ except ImportError:
         CreateChartFromFileTool,
         _to_dataframe
     )
+except Exception:
+    pass
 
 
 class TestHelperFunctions:

@@ -27,6 +27,9 @@ except ImportError:
     PPTX_AVAILABLE = False
 
 try:
+    pass
+except ImportError:
+    pass
     import pandas as pd
     PANDAS_AVAILABLE = True
 except ImportError:

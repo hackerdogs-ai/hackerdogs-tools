@@ -1,0 +1,9 @@
+# Test results
+test_results_*.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+

@@ -1,0 +1,6 @@
+Command: python3 -c 'import piexif; print("OK")'
+================================================================================
+Return code: 0
+Stdout: OK
+
+Stderr: 

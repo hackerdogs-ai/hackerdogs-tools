@@ -13,19 +13,7 @@ from typing import Type, Dict, List, Optional, Any
 import sys
 import os
 # Try to import hd_logging
-try:
-    from hd_logging import setup_logger
-except ImportError:
-    # Fallback for testing environments
-    import logging
-    def setup_logger(name, log_file_path=None, **kwargs):
-        logger = logging.getLogger(name)
-        if not logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
-            logger.addHandler(handler)
-            logger.setLevel(logging.INFO)
-        return logger
+from hd_logging import setup_logger
 import base64
 import io
 import json
@@ -804,7 +792,6 @@ class AnalyzeDocumentStructureTool(BaseTool):
                                 "content": para.text,
                                 "style": para.style.name
                             })
-                except ImportError:
                     return "Error: python-docx required for DOCX files"
                 except Exception as e:
                     return f"Error processing DOCX: {str(e)}"

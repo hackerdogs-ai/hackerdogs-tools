@@ -24,22 +24,35 @@ RUN apt-get update && apt-get install -y \
 
 # Install Go (required for Go-based tools)
 ENV GO_VERSION=1.21.5
-RUN wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz && \
-    rm go${GO_VERSION}.linux-amd64.tar.gz
+# Detect architecture and install appropriate Go version
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        GO_ARCH="amd64"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        GO_ARCH="arm64"; \
+    else \
+        GO_ARCH="amd64"; \
+    fi && \
+    wget -q https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    tar -C /usr/local -xzf go${GO_VERSION}.linux-${GO_ARCH}.tar.gz && \
+    rm go${GO_VERSION}.linux-${GO_ARCH}.tar.gz
 ENV PATH=$PATH:/usr/local/go/bin
+
+# Disable CGO to avoid cross-compilation issues (especially on ARM64/Apple Silicon)
+# Most Go tools work fine without CGO
+ENV CGO_ENABLED=0
 
 # Install Amass
 RUN go install -v github.com/owasp-amass/amass/v4/...@master
 ENV PATH=$PATH:/root/go/bin
 
-# Install Nuclei
+# Install Nuclei (CGO disabled for consistency)
 RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
 
-# Install Subfinder
+# Install Subfinder (CGO disabled for consistency)
 RUN go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 
-# Install waybackurls
+# Install waybackurls (CGO disabled for consistency)
 RUN go install github.com/tomnomnom/waybackurls@latest
 
 # Install Masscan

@@ -1,0 +1,121 @@
+Command: maigret --help
+================================================================================
+usage: maigret [-h] [--version] [--timeout TIMEOUT] [--retries RETRIES]
+               [-n CONNECTIONS] [--no-recursion] [--no-extracting]
+               [--id-type {username,yandex_public_id,gaia_id,vk_id,ok_id,wikimapia_uid,steam_id,uidme_uguid,yelp_userid}]
+               [--permute] [--db DB_FILE] [--cookies-jar-file COOKIE_FILE]
+               [--ignore-ids IGNORED_IDS] [--folderoutput PATH]
+               [--proxy PROXY_URL] [--tor-proxy TOR_PROXY_URL]
+               [--i2p-proxy I2P_PROXY_URL] [--with-domains] [-a]
+               [--top-sites N] [--tags TAGS] [--site SITE_NAME]
+               [--use-disabled-sites] [--parse URL] [--submit URL]
+               [--self-check] [--stats] [--web [PORT]] [--print-not-found]
+               [--print-errors] [--verbose] [--info] [--debug] [--no-color]
+               [--no-progressbar] [-T] [-C] [-H] [-X] [-P] [-G] [-J TYPE]
+               [--reports-sorting {default,data}]
+               [USERNAMES ...]
+
+Maigret v0.5.0
+Documentation: https://maigret.readthedocs.io/
+All settings are also configurable through files, see docs.
+
+positional arguments:
+  USERNAMES             One or more usernames to search by.
+
+options:
+  -h, --help            show this help message and exit
+  --version             Display version information and dependencies.
+  --timeout TIMEOUT     Time in seconds to wait for response to requests
+                        (default 30s). A longer timeout will be more likely to
+                        get results from slow sites. On the other hand, this
+                        may cause a long delay to gather all results.
+  --retries RETRIES     Attempts to restart temporarily failed requests.
+  -n CONNECTIONS, --max-connections CONNECTIONS
+                        Allowed number of concurrent connections (default
+                        100).
+  --no-recursion        Disable recursive search by additional data extracted
+                        from pages.
+  --no-extracting       Disable parsing pages for additional data and other
+                        usernames.
+  --id-type {username,yandex_public_id,gaia_id,vk_id,ok_id,wikimapia_uid,steam_id,uidme_uguid,yelp_userid}
+                        Specify identifier(s) type (default: username).
+  --permute             Permute at least 2 usernames to generate more possible
+                        usernames.
+  --db DB_FILE          Load Maigret database from a JSON file or HTTP web
+                        resource.
+  --cookies-jar-file COOKIE_FILE
+                        File with cookies.
+  --ignore-ids IGNORED_IDS
+                        Do not make search by the specified username or other
+                        ids.
+  --folderoutput PATH, -fo PATH
+                        If using multiple usernames, the output of the results
+                        will be saved to this folder.
+  --proxy PROXY_URL, -p PROXY_URL
+                        Make requests over a proxy. e.g.
+                        socks5://127.0.0.1:1080
+  --tor-proxy TOR_PROXY_URL
+                        Specify URL of your Tor gateway. Default is
+                        socks5://127.0.0.1:9050
+  --i2p-proxy I2P_PROXY_URL
+                        Specify URL of your I2P gateway. Default is
+                        http://127.0.0.1:4444
+  --with-domains        Enable (experimental) feature of checking domains on
+                        usernames.
+  --reports-sorting {default,data}
+                        Method of results sorting in reports (default: in
+                        order of getting the result)
+
+Site filtering:
+  Options to set site search scope
+
+  -a, --all-sites       Use all sites for scan.
+  --top-sites N         Count of sites for scan ranked by Alexa Top (default:
+                        500).
+  --tags TAGS           Specify tags of sites (see `--stats`).
+  --site SITE_NAME      Limit analysis to just the specified sites (multiple
+                        option).
+  --use-disabled-sites  Use disabled sites to search (may cause many false
+                        positives).
+
+Operating modes:
+  Various functions except the default search by a username. Modes are executed sequentially in the order of declaration.
+
+  --parse URL           Parse page by URL and extract username and IDs to use
+                        for search.
+  --submit URL          URL of existing profile in new site to submit.
+  --self-check          Do self check for sites and database and disable non-
+                        working ones.
+  --stats               Show database statistics (most frequent sites engines
+                        and tags).
+  --web [PORT]          Launch the web interface on the specified port
+                        (default: 5000 if no PORT is provided).
+
+Output options:
+  Options to change verbosity and view of the console output
+
+  --print-not-found     Print sites where the username was not found.
+  --print-errors        Print errors messages: connection, captcha, site
+                        country ban, etc.
+  --verbose, -v         Display extra information and metrics.
+  --info, -vv           Display extra/service information and metrics.
+  --debug, -vvv, -d     Display extra/service/debug information and metrics,
+                        save responses in debug.log.
+  --no-color            Don't color terminal output
+  --no-progressbar      Don't show progressbar.
+
+Report formats:
+  Supported formats of report files
+
+  -T, --txt             Create a TXT report (one report per username).
+  -C, --csv             Create a CSV report (one report per username).
+  -H, --html            Create an HTML report file (general report on all
+                        usernames).
+  -X, --xmind           Generate an XMind 8 mindmap report (one report per
+                        username).
+  -P, --pdf             Generate a PDF report (general report on all
+                        usernames).
+  -G, --graph           Generate a graph report (general report on all
+                        usernames).
+  -J TYPE, --json TYPE  Generate a JSON report of specific type: simple,
+                        ndjson (one report per username).

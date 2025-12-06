@@ -38,10 +38,11 @@ try:
     CreateChartFromFileTool = create_chart_from_file
     VISUALIZATION_TOOLS_AVAILABLE = True
 except ImportError:
-    VISUALIZATION_TOOLS_AVAILABLE = False
     # Create dummy classes if import fails
     CreatePlotlyChartTool = None
     CreateChartFromFileTool = None
+    VISUALIZATION_TOOLS_AVAILABLE = False
+
 from .ocr_tools import (
     ExtractTextFromImageTool,
     ExtractTextFromPDFImagesTool,

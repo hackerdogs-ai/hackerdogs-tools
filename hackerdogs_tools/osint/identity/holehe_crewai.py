@@ -5,8 +5,6 @@ Check email registration on 120+ sites
 """
 
 import json
-import subprocess
-import shutil
 from typing import Any, Optional, List
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -31,9 +29,6 @@ class HoleheTool(BaseTool):
     
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        # Add validation if needed
-        # if not shutil.which("holehe"):
-        #     raise ValueError("Holehe not found. Please install it.")
     
     def _run(
         self,
@@ -64,18 +59,76 @@ class HoleheTool(BaseTool):
                 safe_log_error(logger, error_msg)
                 return json.dumps({"status": "error", "message": error_msg})
             
-            # TODO: Implement tool-specific logic
-            # This is a template - implement actual tool execution
+            # Build command arguments
+            # Holehe CLI: holehe <email>
+            # Optional: --only-used flag to filter results
+            args = [email]
             
-            result_data = {
-                "status": "success",
-                "message": "Tool execution not yet implemented",
-                "email": email,
-                "only_used": only_used
-            }
+            # Execute in Docker using custom osint-tools container
+            # Holehe doesn't have an official Docker image, so it uses the custom container
+            # Timeout: 5 minutes (holehe checks 120+ sites, can take time)
+            docker_result = execute_in_docker("holehe", args, timeout=300)
             
-            safe_log_info(logger, f"[HoleheTool] Complete", email=email)
-            return json.dumps(result_data, indent=2)
+            if docker_result["status"] != "success":
+                error_msg = f"Holehe failed: {docker_result.get('stderr', docker_result.get('message', 'Unknown error'))}"
+                safe_log_error(logger, error_msg)
+                return json.dumps({"status": "error", "message": error_msg})
+            
+            # Parse output
+            stdout = docker_result.get("stdout", "")
+            stderr = docker_result.get("stderr", "")
+            
+            # Holehe outputs text format: [x] site_name (exists) or [-] site_name (doesn't exist)
+            # Parse text output and convert to JSON
+            if stdout:
+                try:
+                    results = []
+                    for line in stdout.strip().split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        # Skip header lines (lines with asterisks or dashes)
+                        if line.startswith('*') or (line.startswith('-') and len(line) > 20):
+                            continue
+                        # Skip email header line
+                        if '@' in line and ('gmail.com' in line.lower() or 'hotmail.com' in line.lower() or 'live.com' in line.lower()):
+                            continue
+                        # Parse [x] site_name or [-] site_name
+                        if line.startswith('[x]'):
+                            site_name = line[3:].strip()
+                            if site_name:
+                                site_result = {
+                                    "name": site_name,
+                                    "exists": True,
+                                    "url": f"https://{site_name}" if not site_name.startswith('http') else site_name
+                                }
+                                if not only_used or site_result.get("exists", False):
+                                    results.append(site_result)
+                        elif line.startswith('[-]'):
+                            site_name = line[3:].strip()
+                            if site_name:
+                                site_result = {
+                                    "name": site_name,
+                                    "exists": False,
+                                    "url": f"https://{site_name}" if not site_name.startswith('http') else site_name
+                                }
+                                if not only_used:  # Include non-existing sites if only_used is False
+                                    results.append(site_result)
+                    
+                    # Return results as JSON array
+                    safe_log_info(logger, f"[HoleheTool] Complete", email=email, sites_found=len(results))
+                    return json.dumps(results, indent=2)
+                except Exception as e:
+                    safe_log_error(logger, f"[HoleheTool] Error parsing output: {str(e)}", exc_info=True)
+                    # Fall through to return raw output
+            elif stderr:
+                # If stdout is empty but stderr has content, return it
+                safe_log_info(logger, f"[HoleheTool] Complete - returning stderr", email=email)
+                return stderr
+            
+            # If both stdout and stderr are empty, return empty array (no results found)
+            safe_log_info(logger, f"[HoleheTool] Complete - no output, returning empty array", email=email)
+            return json.dumps([], indent=2)
             
         except Exception as e:
             safe_log_error(logger, f"[HoleheTool] Error: {str(e)}", exc_info=True)

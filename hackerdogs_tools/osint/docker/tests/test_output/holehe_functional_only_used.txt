@@ -1,0 +1,51 @@
+Tool: holehe
+Command: docker exec osint-tools holehe test@example.com --only-used --no-color --no-clear
+Return Code: 0
+================================================================================
+STDOUT:
+--------------------------------------------------------------------------------
+Twitter : @palenath
+Github : https://github.com/megadose/holehe
+For BTC Donations : 1FHDM49QfZX6pJmhjLE5tB2K6CaTLMZpXZ
+
+
+**********************
+   test@example.com
+**********************
+[+] amazon.com
+[+] bodybuilding.com
+[+] eventbrite.com
+[+] firefox.com
+[+] flickr.com
+[+] komoot.com
+[+] office365.com
+[+] plurk.com
+[+] replit.com
+[+] seoclerks.com
+[+] spotify.com
+[+] teamtreehouse.com
+[+] twitter.com
+[+] wordpress.com
+[+] xnxx.com
+[+] xvideos.com
+
+[+] Email used, [-] Email not used, [x] Rate limit
+121 websites checked in 10.42 seconds
+Twitter : @palenath
+Github : https://github.com/megadose/holehe
+For BTC Donations : 1FHDM49QfZX6pJmhjLE5tB2K6CaTLMZpXZ
+
+================================================================================
+STDERR:
+--------------------------------------------------------------------------------
+
+  0%|          | 0/121 [00:00<?, ?it/s]
+  2%|▏         | 2/121 [00:00<00:09, 12.73it/s]
+  5%|▍         | 6/121 [00:00<00:04, 25.34it/s]
+  8%|▊         | 10/121 [00:00<00:03, 30.49it/s]
+ 23%|██▎       | 28/121 [00:00<00:01, 83.57it/s]
+ 44%|████▍     | 53/121 [00:00<00:00, 138.26it/s]
+ 64%|██████▍   | 78/121 [00:00<00:00, 171.11it/s]
+ 79%|███████▉  | 96/121 [00:00<00:00, 132.24it/s]
+ 92%|█████████▏| 111/121 [00:01<00:00, 84.34it/s]
+100%|██████████| 121/121 [00:10<00:00, 11.67it/s]

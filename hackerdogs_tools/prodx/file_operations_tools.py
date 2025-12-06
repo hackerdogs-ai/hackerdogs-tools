@@ -10,19 +10,7 @@ from typing import Type, Dict, Optional, Any
 import sys
 import os
 # Try to import hd_logging
-try:
-    from hd_logging import setup_logger
-except ImportError:
-    # Fallback for testing environments
-    import logging
-    def setup_logger(name, log_file_path=None, **kwargs):
-        logger = logging.getLogger(name)
-        if not logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
-            logger.addHandler(handler)
-            logger.setLevel(logging.INFO)
-        return logger
+from hd_logging import setup_logger
 import base64
 import io
 import json
@@ -499,7 +487,6 @@ class ConvertFileFormatTool(BaseTool):
                         converted_bytes = output.getvalue()
                         mime_type = f"image/{target_format.lower()}"
                         file_extension = target_format.lower()
-                except ImportError:
                     return "Error: pdf2image and Pillow required for PDF to image conversion"
                 except Exception as e:
                     return f"Error converting PDF to image: {str(e)}"

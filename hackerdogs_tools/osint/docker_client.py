@@ -71,10 +71,11 @@ class DockerOSINTClient:
         
         if self.docker_available:
             execution_context = "container" if self.in_container else "host"
-            safe_log_info(logger, f"[DockerOSINTClient] Initialized", 
-                         image=self.image_name, 
+            safe_log_info(logger, f"[DockerOSINTClient] Initialized (default container for tools without official images)", 
+                         default_image=self.image_name, 
                          container=self.container_name,
-                         context=execution_context)
+                         context=execution_context,
+                         note="Tools with official Docker images (sherlock, maigret, nuclei, etc.) use their own images, not this default")
             
             if self.in_container:
                 # Check if Docker socket is mounted (recommended for container execution)
@@ -444,9 +445,14 @@ def execute_in_docker(
     
     # Try official image first if available
     if tool in official_images:
-        return execute_official_docker_image(official_images[tool], args, timeout=timeout, volumes=volumes)
+        official_image = official_images[tool]
+        safe_log_info(logger, f"[execute_in_docker] Using official Docker image", 
+                     tool=tool, image=official_image, execution_method="docker run")
+        return execute_official_docker_image(official_image, args, timeout=timeout, volumes=volumes)
     
     # Fall back to custom container
+    safe_log_info(logger, f"[execute_in_docker] Using custom container", 
+                 tool=tool, container="osint-tools", execution_method="docker exec")
     client = get_docker_client()
     if client is None:
         return {

@@ -1,0 +1,9 @@
+Command: waybackurls --help
+================================================================================
+Usage of waybackurls:
+  -dates
+    	show date of fetch in the first column
+  -get-versions
+    	list URLs for crawled versions of input URL(s)
+  -no-subs
+    	don't include subdomains of the target domain

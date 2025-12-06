@@ -1,0 +1,617 @@
+[
+  {
+    "name": "about.me",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "adobe.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "amazon.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "amocrm.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "any.do",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "archive.org",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "armurerie-auxerre.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "atlassian.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "axonaut.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "babeshows.co.uk",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "badeggsonline.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "bios-mods.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "biotechnologyforums.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "bitmoji.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "blablacar.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "blackworldforum.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "blip.fm",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "forum.blitzortung.org",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "bluegrassrivals.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "bodybuilding.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "buymeacoffee.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "discussion.cambridge-mt.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "caringbridge.org",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "chinaphonearena.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "clashfarmer.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "codecademy.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "forum.codeigniter.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "codepen.io",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "coroflot.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "cpaelites.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "cpahero.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "cracked.to",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "crevado.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "deliveroo.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "demonforums.net",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "devrant.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "diigo.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "discord.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "docker.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "dominos.fr",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "ebay.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "ello.co",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "envato.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "eventbrite.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "evernote.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "fanpop.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "firefox.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "flickr.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "freelancer.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "drachenhort.user.stunet.tu-freiberg.de",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "garmin.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "github.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "google.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "en.gravatar.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "hubspot.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "imgur.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "insightly.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "instagram.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "issuu.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "forum.kodi.tv",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "komoot.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "laposte.fr",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "last.fm",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "lastpass.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "mail.ru",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "community.mybb.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "myspace.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "nattyornotforum.nattyornot.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "naturabuy.fr",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "forum.ndemiccreations.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "forums.nextpvr.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "nike.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "nimble.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "nocrm.io",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "nutshell.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "ok.ru",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "office365.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "onlinesequencer.net",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "parler.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "patreon.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "pinterest.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "pipedrive.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "plurk.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "pornhub.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "protonmail.ch",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "quora.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "rambler.ru",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "redtube.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "replit.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "rocketreach.co",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "samsung.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "seoclerks.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "7cups.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "smule.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "snapchat.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "soundcloud.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "sporcle.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "spotify.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "strava.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "strava.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "taringa.net",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "teamleader.eu",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "teamtreehouse.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "tellonym.me",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "thecardboard.org",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "forums.therian-guide.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "thevapingforum.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "tumblr.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "tunefind.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "twitter.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "venmo.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "vivino.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "voxmedia.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "vrbo.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "vsco.co",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "wattpad.com",
+    "exists": false,
+    "status": "not_exists"
+  },
+  {
+    "name": "wordpress.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "xing.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "xnxx.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "xvideos.com",
+    "exists": true,
+    "status": "exists"
+  },
+  {
+    "name": "yahoo.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "zoho.com",
+    "exists": false,
+    "status": "rate_limit"
+  },
+  {
+    "name": "limit",
+    "exists": true,
+    "status": "exists"
+  }
+]

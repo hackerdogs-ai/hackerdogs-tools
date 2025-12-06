@@ -74,7 +74,6 @@ except ImportError:
             create_test_image_with_text,
             get_test_image_urls
         )
-    except ImportError:
         # Define minimal versions if import fails
         def download_image_from_url(url: str, timeout: int = 10):
             try:
@@ -97,6 +96,8 @@ except ImportError:
             return [
                 "https://via.placeholder.com/400x200/000000/FFFFFF?text=TEST+IMAGE",
             ]
+    except Exception:
+        pass
 
 
 class TestHelperFunctions:

@@ -1,0 +1,44 @@
+Command: amass --help
+================================================================================
+
+        .+++:.            :                             .+++.
+      +W@@@@@@8        &+W@#               o8W8:      +W@@@@@@#.   oW@@@W#+
+     &@#+   .o@##.    .@@@o@W.o@@o       :@@#&W8o    .@#:  .:oW+  .@#+++&#&
+    +@&        &@&     #@8 +@W@&8@+     :@W.   +@8   +@:          .@8
+    8@          @@     8@o  8@8  WW    .@W      W@+  .@W.          o@#:
+    WW          &@o    &@:  o@+  o@+   #@.      8@o   +W@#+.        +W@8:
+    #@          :@W    &@+  &@+   @8  :@o       o@o     oW@@W+        oW@8
+    o@+          @@&   &@+  &@+   #@  &@.      .W@W       .+#@&         o@W.
+     WW         +@W@8. &@+  :&    o@+ #@      :@W&@&         &@:  ..     :@o
+     :@W:      o@# +Wo &@+        :W: +@W&o++o@W. &@&  8@#o+&@W.  #@:    o@+
+      :W@@WWWW@@8       +              :&W@@@@&    &W  .o#@@W&.   :W@WWW@@&
+        +o&&&&+.                                                    +oooo.
+
+                                                                      v4.2.0
+                                           OWASP Amass Project - @owaspamass
+                         In-depth Attack Surface Mapping and Asset Discovery
+
+
+Usage: amass intel|enum [options]
+
+  -h	Show the program usage message
+  -help
+    	Show the program usage message
+  -version
+    	Print the version number of this Amass binary
+
+
+Subcommands: 
+
+	amass intel - Discover targets for enumerations
+	amass enum  - Perform enumerations and network mapping
+
+The user's guide can be found here: 
+https://github.com/owasp-amass/amass/blob/master/doc/user_guide.md
+
+An example configuration file can be found here: 
+https://github.com/owasp-amass/amass/blob/master/examples/config.yaml
+
+The Amass tutorial can be found here: 
+https://github.com/owasp-amass/amass/blob/master/doc/tutorial.md
+

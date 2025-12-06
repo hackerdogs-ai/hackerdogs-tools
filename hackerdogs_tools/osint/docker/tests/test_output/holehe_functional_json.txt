@@ -1,0 +1,158 @@
+Tool: holehe
+Command: docker exec osint-tools holehe test@example.com --no-color --no-clear
+Return Code: 0
+================================================================================
+STDOUT:
+--------------------------------------------------------------------------------
+Twitter : @palenath
+Github : https://github.com/megadose/holehe
+For BTC Donations : 1FHDM49QfZX6pJmhjLE5tB2K6CaTLMZpXZ
+
+
+**********************
+   test@example.com
+**********************
+[x] about.me
+[x] adobe.com
+[+] amazon.com
+[x] amocrm.com
+[-] any.do
+[-] archive.org
+[-] armurerie-auxerre.com
+[x] atlassian.com
+[-] axonaut.com
+[x] babeshows.co.uk
+[x] badeggsonline.com
+[x] bios-mods.com
+[x] biotechnologyforums.com
+[x] bitmoji.com
+[x] blablacar.com
+[x] blackworldforum.com
+[-] blip.fm
+[x] forum.blitzortung.org
+[x] bluegrassrivals.com
+[+] bodybuilding.com
+[x] buymeacoffee.com
+[x] discussion.cambridge-mt.com
+[-] caringbridge.org
+[x] chinaphonearena.com
+[x] clashfarmer.com
+[x] codecademy.com
+[x] forum.codeigniter.com
+[x] codepen.io
+[-] coroflot.com
+[x] cpaelites.com
+[x] cpahero.com
+[x] cracked.to
+[x] crevado.com
+[x] deliveroo.com
+[x] demonforums.net
+[x] devrant.com
+[x] diigo.com
+[x] discord.com
+[-] docker.com
+[x] dominos.fr
+[x] ebay.com
+[x] ello.co
+[-] envato.com
+[+] eventbrite.com
+[x] evernote.com
+[-] fanpop.com
+[+] firefox.com
+[+] flickr.com
+[x] freelancer.com
+[x] drachenhort.user.stunet.tu-freiberg.de
+[x] garmin.com
+[x] github.com
+[x] google.com
+[-] en.gravatar.com
+[x] hubspot.com
+[x] imgur.com
+[-] insightly.com
+[x] instagram.com
+[x] issuu.com
+[x] forum.kodi.tv
+[+] komoot.com
+[-] laposte.fr
+[x] last.fm
+[-] lastpass.com
+[-] mail.ru
+[x] community.mybb.com
+[x] myspace.com
+[x] nattyornotforum.nattyornot.com
+[-] naturabuy.fr
+[x] forum.ndemiccreations.com
+[x] forums.nextpvr.com
+[x] nike.com
+[x] nimble.com
+[x] nocrm.io
+[x] nutshell.com
+[x] ok.ru
+[+] office365.com
+[x] onlinesequencer.net
+[-] parler.com
+[x] patreon.com
+[x] pinterest.com
+[x] pipedrive.com
+[+] plurk.com
+[x] pornhub.com
+[-] protonmail.ch
+[x] quora.com
+[-] rambler.ru
+[x] redtube.com
+[+] replit.com
+[x] rocketreach.co
+[x] samsung.com
+[+] seoclerks.com
+[-] 7cups.com
+[x] smule.com
+[x] snapchat.com
+[x] soundcloud.com
+[-] sporcle.com
+[+] spotify.com
+[x] strava.com
+[x] strava.com
+[-] taringa.net
+[x] teamleader.eu
+[+] teamtreehouse.com
+[-] tellonym.me
+[x] thecardboard.org
+[x] forums.therian-guide.com
+[x] thevapingforum.com
+[x] tumblr.com
+[x] tunefind.com
+[+] twitter.com
+[x] venmo.com
+[x] vivino.com
+[x] voxmedia.com
+[x] vrbo.com
+[x] vsco.co
+[-] wattpad.com
+[x] wordpress.com
+[x] xing.com
+[+] xvideos.com
+[x] yahoo.com
+[x] zoho.com
+
+[+] Email used, [-] Email not used, [x] Rate limit
+121 websites checked in 10.44 seconds
+Twitter : @palenath
+Github : https://github.com/megadose/holehe
+For BTC Donations : 1FHDM49QfZX6pJmhjLE5tB2K6CaTLMZpXZ
+
+================================================================================
+STDERR:
+--------------------------------------------------------------------------------
+
+  0%|          | 0/121 [00:00<?, ?it/s]
+  1%|          | 1/121 [00:00<00:14,  8.04it/s]
+  4%|▍         | 5/121 [00:00<00:05, 22.42it/s]
+  7%|▋         | 8/121 [00:00<00:04, 22.84it/s]
+  9%|▉         | 11/121 [00:00<00:04, 22.49it/s]
+ 34%|███▍      | 41/121 [00:00<00:00, 105.99it/s]
+ 52%|█████▏    | 63/121 [00:00<00:00, 137.62it/s]
+ 65%|██████▌   | 79/121 [00:00<00:00, 141.54it/s]
+ 79%|███████▊  | 95/121 [00:00<00:00, 123.17it/s]
+ 90%|█████████ | 109/121 [00:01<00:00, 89.58it/s]
+ 99%|█████████▉| 120/121 [00:10<00:00,  4.93it/s]
+100%|██████████| 121/121 [00:10<00:00, 11.63it/s]

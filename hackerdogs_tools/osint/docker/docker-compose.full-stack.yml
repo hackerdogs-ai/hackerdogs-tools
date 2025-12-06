@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Full Stack Docker Compose for OSINT Tools
 # This setup allows your application (running in Docker) to call
 # OSINT binaries in another Docker container.
