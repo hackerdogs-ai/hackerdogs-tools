@@ -341,7 +341,46 @@ def maigret_search(
                 safe_log_info(logger, f"[maigret_search] Complete - returning JSON files verbatim", usernames=usernames)
                 return json.dumps(json_results, indent=2)
         
-        # For non-JSON formats or if JSON files not found: return stdout/stderr verbatim
+        # For CSV format: check for CSV files in output directory
+        if report_format == "csv" and temp_dir and os.path.exists(temp_dir):
+            csv_results = {}
+            try:
+                # Look for CSV files in the output directory
+                # Maigret saves files as: report_{username}.csv or {username}.csv
+                for username in usernames:
+                    csv_file = None
+                    # Try Maigret's naming pattern: report_{username}.csv
+                    csv_file = os.path.join(temp_dir, f"report_{username}.csv")
+                    # Fallback to simple naming
+                    if not os.path.exists(csv_file):
+                        csv_file = os.path.join(temp_dir, f"{username}.csv")
+                    
+                    if os.path.exists(csv_file):
+                        # Read raw CSV file and return as-is (verbatim)
+                        with open(csv_file, 'r', encoding='utf-8') as f:
+                            csv_results[username] = f.read()
+            except Exception as e:
+                safe_log_error(logger, f"[maigret_search] Error reading CSV files: {str(e)}", exc_info=True)
+            
+            # Cleanup temp directory
+            if os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                except Exception:
+                    pass
+            
+            # Return CSV files as dictionary mapping username to CSV content - no wrapper
+            if csv_results:
+                if len(csv_results) == 1 and len(usernames) == 1:
+                    # Single CSV file - return it verbatim
+                    safe_log_info(logger, f"[maigret_search] Complete - returning CSV file content verbatim", usernames=usernames)
+                    return list(csv_results.values())[0]
+                else:
+                    # Multiple CSV files - return as dict
+                    safe_log_info(logger, f"[maigret_search] Complete - returning CSV files verbatim", usernames=usernames)
+                    return json.dumps(csv_results, indent=2)
+        
+        # For other non-JSON formats (txt, html, xmind, pdf, graph) or if files not found: return stdout/stderr verbatim
         # Cleanup temp directory
         if temp_dir and os.path.exists(temp_dir):
             try:

@@ -125,7 +125,20 @@ def sherlock_enum(
             else:
                 args.extend(["--folderoutput", container_json_path])
         elif output_format == "csv":
-            args.append("--csv")
+            # CSV output via --output with .csv extension
+            temp_dir = tempfile.mkdtemp()
+            if len(usernames) == 1:
+                output_file_path = os.path.join(temp_dir, f"{usernames[0]}.csv")
+                container_csv_path = f"/output/{usernames[0]}.csv"
+            else:
+                # Multiple usernames - use folderoutput
+                output_file_path = temp_dir  # Will contain multiple files
+                container_csv_path = "/output"
+            volumes.append(f"{temp_dir}:/output")
+            if len(usernames) == 1:
+                args.extend(["--csv", "--output", container_csv_path])
+            else:
+                args.extend(["--csv", "--folderoutput", container_csv_path])
         elif output_format == "xlsx":
             # XLSX output
             temp_dir = tempfile.mkdtemp()
@@ -190,10 +203,15 @@ def sherlock_enum(
                     safe_log_error(logger, f"[sherlock_enum] Error reading JSON file: {str(e)}", exc_info=True)
                     # Fall through to check directory
             # If single file doesn't exist, check if it's in the temp directory
-            elif os.path.exists(os.path.dirname(output_file_path)):
-                temp_dir = os.path.dirname(output_file_path)
+            elif output_file_path and os.path.exists(os.path.dirname(output_file_path)):
+                # Get the temp directory - since file doesn't exist, use parent directory
+                # If output_file_path is a directory, use it directly; otherwise use parent
+                if os.path.exists(output_file_path) and os.path.isdir(output_file_path):
+                    search_dir = output_file_path
+                else:
+                    search_dir = os.path.dirname(output_file_path)
                 # Look for JSON file in temp directory
-                json_file = os.path.join(temp_dir, os.path.basename(output_file_path))
+                json_file = os.path.join(search_dir, os.path.basename(output_file_path))
                 if os.path.exists(json_file) and os.path.isfile(json_file):
                     try:
                         with open(json_file, 'r', encoding='utf-8', errors='ignore') as f:
@@ -201,7 +219,7 @@ def sherlock_enum(
                         # Cleanup temp directory
                         try:
                             import shutil
-                            shutil.rmtree(temp_dir)
+                            shutil.rmtree(search_dir)
                         except Exception:
                             pass
                         # Return JSON file content directly, verbatim - no wrapper
@@ -228,10 +246,12 @@ def sherlock_enum(
                     safe_log_error(logger, f"[sherlock_enum] Error reading JSON files: {str(e)}", exc_info=True)
                 
                 # Cleanup temp directory
-                if os.path.exists(os.path.dirname(output_file_path)):
+                # output_file_path is the directory itself for multiple usernames
+                cleanup_dir = output_file_path if os.path.isdir(output_file_path) else os.path.dirname(output_file_path)
+                if cleanup_dir and os.path.exists(cleanup_dir):
                     try:
                         import shutil
-                        shutil.rmtree(os.path.dirname(output_file_path))
+                        shutil.rmtree(cleanup_dir)
                     except Exception:
                         pass
                 
@@ -239,24 +259,118 @@ def sherlock_enum(
                 safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON files verbatim", usernames=usernames)
                 return json.dumps(json_results, indent=2)
         
-        # For CSV/XLSX or other formats: return stdout verbatim
-        # But first, check if JSON files were created in temp directory even if path check failed
+        # For CSV format: check for CSV files in output directory
+        if output_format == "csv" and output_file_path:
+            # Check if CSV file exists
+            if os.path.exists(output_file_path) and os.path.isfile(output_file_path):
+                try:
+                    with open(output_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        csv_content = f.read()
+                    # Cleanup temp directory
+                    if os.path.exists(os.path.dirname(output_file_path)):
+                        try:
+                            import shutil
+                            shutil.rmtree(os.path.dirname(output_file_path))
+                        except Exception:
+                            pass
+                    # Return CSV file content directly, verbatim - no wrapper
+                    safe_log_info(logger, f"[sherlock_enum] Complete - returning CSV file content verbatim", usernames=usernames)
+                    return csv_content
+                except Exception as e:
+                    safe_log_error(logger, f"[sherlock_enum] Error reading CSV file: {str(e)}", exc_info=True)
+                    # Fall through to check directory
+            # Check if it's a directory with multiple CSV files
+            elif os.path.exists(output_file_path) and os.path.isdir(output_file_path):
+                csv_results = {}
+                try:
+                    for file in os.listdir(output_file_path):
+                        file_path = os.path.join(output_file_path, file)
+                        if os.path.isfile(file_path) and file.endswith('.csv'):
+                            # Extract username from filename (e.g., "username.csv")
+                            username = file.replace('.csv', '')
+                            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                csv_results[username] = f.read()
+                except Exception as e:
+                    safe_log_error(logger, f"[sherlock_enum] Error reading CSV files: {str(e)}", exc_info=True)
+                
+                # Cleanup temp directory
+                # output_file_path is the directory itself for multiple usernames
+                cleanup_dir = output_file_path if os.path.isdir(output_file_path) else os.path.dirname(output_file_path)
+                if cleanup_dir and os.path.exists(cleanup_dir):
+                    try:
+                        import shutil
+                        shutil.rmtree(cleanup_dir)
+                    except Exception:
+                        pass
+                
+                # Return CSV files as dictionary - no wrapper metadata
+                if csv_results:
+                    safe_log_info(logger, f"[sherlock_enum] Complete - returning CSV files verbatim", usernames=usernames)
+                    return json.dumps(csv_results, indent=2)
+            # Fallback: check temp directory for CSV files
+            elif output_file_path:
+                # Get the temp directory - check if output_file_path exists and is a directory
+                if os.path.exists(output_file_path) and os.path.isdir(output_file_path):
+                    search_dir = output_file_path
+                else:
+                    search_dir = os.path.dirname(output_file_path)
+                if os.path.exists(search_dir):
+                    try:
+                        csv_files = [f for f in os.listdir(search_dir) if f.endswith('.csv')]
+                        if csv_files:
+                            if len(csv_files) == 1 and len(usernames) == 1:
+                                # Single CSV file - return it verbatim
+                                csv_file = os.path.join(search_dir, csv_files[0])
+                                with open(csv_file, 'r', encoding='utf-8', errors='ignore') as f:
+                                    csv_content = f.read()
+                                # Cleanup
+                                try:
+                                    import shutil
+                                    shutil.rmtree(search_dir)
+                                except Exception:
+                                    pass
+                                safe_log_info(logger, f"[sherlock_enum] Complete - returning CSV file content verbatim", usernames=usernames)
+                                return csv_content
+                            else:
+                                # Multiple CSV files - return as dict
+                                csv_results = {}
+                                for csv_file in csv_files:
+                                    file_path = os.path.join(search_dir, csv_file)
+                                    username = csv_file.replace('.csv', '')
+                                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                        csv_results[username] = f.read()
+                                # Cleanup
+                                try:
+                                    import shutil
+                                    shutil.rmtree(search_dir)
+                                except Exception:
+                                    pass
+                                safe_log_info(logger, f"[sherlock_enum] Complete - returning CSV files verbatim", usernames=usernames)
+                                return json.dumps(csv_results, indent=2)
+                    except Exception as e:
+                        safe_log_error(logger, f"[sherlock_enum] Error checking temp directory for CSV: {str(e)}", exc_info=True)
+        
+        # For JSON format: check if JSON files were created in temp directory even if path check failed
         if output_format == "json" and output_file_path:
-            temp_dir = os.path.dirname(output_file_path) if output_file_path else None
-            if temp_dir and os.path.exists(temp_dir):
+            # Get the temp directory - check if output_file_path exists and is a directory
+            if os.path.exists(output_file_path) and os.path.isdir(output_file_path):
+                search_dir = output_file_path
+            else:
+                search_dir = os.path.dirname(output_file_path)
+            if search_dir and os.path.exists(search_dir):
                 # Look for any JSON files in the temp directory
                 try:
-                    json_files = [f for f in os.listdir(temp_dir) if f.endswith('.json')]
+                    json_files = [f for f in os.listdir(search_dir) if f.endswith('.json')]
                     if json_files:
                         if len(json_files) == 1 and len(usernames) == 1:
                             # Single JSON file - return it verbatim
-                            json_file = os.path.join(temp_dir, json_files[0])
+                            json_file = os.path.join(search_dir, json_files[0])
                             with open(json_file, 'r', encoding='utf-8', errors='ignore') as f:
                                 json_content = f.read()
                             # Cleanup
                             try:
                                 import shutil
-                                shutil.rmtree(temp_dir)
+                                shutil.rmtree(search_dir)
                             except Exception:
                                 pass
                             safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON file content verbatim", usernames=usernames)
@@ -265,14 +379,14 @@ def sherlock_enum(
                             # Multiple JSON files - return as dict
                             json_results = {}
                             for json_file in json_files:
-                                file_path = os.path.join(temp_dir, json_file)
+                                file_path = os.path.join(search_dir, json_file)
                                 username = json_file.replace('.json', '')
                                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                                     json_results[username] = f.read()
                             # Cleanup
                             try:
                                 import shutil
-                                shutil.rmtree(temp_dir)
+                                shutil.rmtree(search_dir)
                             except Exception:
                                 pass
                             safe_log_info(logger, f"[sherlock_enum] Complete - returning JSON files verbatim", usernames=usernames)
@@ -281,12 +395,15 @@ def sherlock_enum(
                     safe_log_error(logger, f"[sherlock_enum] Error checking temp directory: {str(e)}", exc_info=True)
         
         # Cleanup temp directory
-        if output_file_path and os.path.exists(os.path.dirname(output_file_path)):
-            try:
-                import shutil
-                shutil.rmtree(os.path.dirname(output_file_path))
-            except Exception:
-                pass
+        if output_file_path:
+            # output_file_path might be a directory (for multiple usernames) or a file path
+            cleanup_dir = output_file_path if os.path.isdir(output_file_path) else os.path.dirname(output_file_path)
+            if cleanup_dir and os.path.exists(cleanup_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(cleanup_dir)
+                except Exception:
+                    pass
         
         # Return stdout/stderr verbatim - no wrapper
         safe_log_info(logger, f"[sherlock_enum] Complete - returning stdout verbatim", usernames=usernames)
