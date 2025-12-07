@@ -32,31 +32,55 @@ def exiftool_search(
     runtime: ToolRuntime,
     file_path: str,
     extract_gps: bool = True,
-    extract_author: bool = True
+    extract_author: bool = True,
+    output_format: str = "json"
 ) -> str:
     """
-    Extract metadata from images/PDFs
+    Extract metadata from images, PDFs, and other files using ExifTool.
+    
+    Use cases:
+    1. Geospatial Intelligence (GEOINT): Extract GPS coordinates from photos
+    2. Device Fingerprinting: Identify camera/device make, model, software
+    3. Document Attribution: Extract author, creator, creation dates from PDFs
+    4. Timeline Reconstruction: Extract timestamps (DateTimeOriginal, CreateDate)
+    5. Image Authenticity: Detect editing software and manipulation history
     
     Args:
         runtime: ToolRuntime instance (automatically injected).
-                file_path: str - Parameter description
-        extract_gps: bool - Parameter description
-        extract_author: bool - Parameter description
+        file_path: Path to the file (image, PDF, or other supported format).
+                  File must be accessible via Docker volume mount.
+        extract_gps: If True, prioritize GPS-related metadata extraction (default: True).
+        extract_author: If True, prioritize author/creator metadata extraction (default: True).
+        output_format: Output format - "json" (default) or "text".
     
     Returns:
-        JSON string with results.
+        JSON string with extracted metadata. Returns verbatim ExifTool JSON output.
+        Common fields include:
+        - GPS: GPSLatitude, GPSLongitude, GPSAltitude, GPSDateTime
+        - Author: Author, Creator, Producer, XMP:Creator
+        - Device: Make, Model, SerialNumber, Software
+        - Time: DateTimeOriginal, CreateDate, ModifyDate
+        - Image: ImageWidth, ImageHeight, ColorSpace, Compression
     """
     try:
-        safe_log_info(logger, f"[exiftool_search] Starting", file_path=file_path, extract_gps=extract_gps, extract_author=extract_author)
+        safe_log_info(logger, f"[exiftool_search] Starting", file_path=file_path, extract_gps=extract_gps, extract_author=extract_author, output_format=output_format)
         
         # Validate inputs
         if not file_path or not isinstance(file_path, str):
-            error_msg = "Invalid file_path provided"
+            error_msg = "file_path must be a non-empty string"
+            safe_log_error(logger, error_msg)
+            return json.dumps({"status": "error", "message": error_msg})
+        
+        if output_format not in ["json", "text"]:
+            error_msg = "output_format must be 'json' or 'text'"
             safe_log_error(logger, error_msg)
             return json.dumps({"status": "error", "message": error_msg})
         
         # Check Docker availability (Docker-only execution)
         from hackerdogs_tools.osint.docker_client import get_docker_client, execute_in_docker
+        import os
+        import tempfile
+        
         docker_client = get_docker_client()
         
         if not docker_client or not docker_client.docker_available:
@@ -68,12 +92,89 @@ def exiftool_search(
             safe_log_error(logger, error_msg)
             return json.dumps({"status": "error", "message": error_msg})
         
-        # TODO: Implement tool-specific logic
-        # This is a template - implement actual tool execution
+        # Check if file exists (host-side check)
+        if not os.path.exists(file_path):
+            error_msg = f"File not found: {file_path}"
+            safe_log_error(logger, error_msg)
+            return json.dumps({"status": "error", "message": error_msg})
         
-        safe_log_info(logger, f"[exiftool_search] Complete", file_path=file_path)
-        return json.dumps({"status": "error", "message": "Tool execution not yet implemented"})
+        # Build ExifTool command arguments
+        args = []
+        
+        # Output format
+        if output_format == "json":
+            args.append("-j")  # JSON output
+            args.append("-G")  # Include group names (e.g., "EXIF:Make")
+        else:
+            args.append("-S")  # Short format for text output
+        
+        # Always include all metadata
+        args.append("-a")  # Show all tags (not just EXIF)
+        args.append("-u")  # Show unknown tags too
+        
+        # For docker exec, we need to copy the file into the container
+        # since docker exec doesn't support volume mounting
+        import subprocess
+        import tempfile
+        
+        file_name = os.path.basename(file_path)
+        container_file_path = f"/workspace/{file_name}"
+        
+        # Copy file into container
+        try:
+            copy_cmd = [
+                "docker", "cp", file_path, f"{docker_client.container_name}:{container_file_path}"
+            ]
+            copy_result = subprocess.run(
+                copy_cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False
+            )
+            
+            if copy_result.returncode != 0:
+                error_msg = f"Failed to copy file into container: {copy_result.stderr}"
+                safe_log_error(logger, error_msg)
+                return json.dumps({"status": "error", "message": error_msg})
+            
+            safe_log_info(logger, f"[exiftool_search] File copied to container", 
+                         host_path=file_path, container_path=container_file_path)
+        except Exception as e:
+            error_msg = f"Failed to copy file into container: {str(e)}"
+            safe_log_error(logger, error_msg)
+            return json.dumps({"status": "error", "message": error_msg})
+        
+        args.append(container_file_path)
+        
+        # Execute ExifTool in Docker (docker exec doesn't support volumes)
+        docker_result = execute_in_docker("exiftool", args, timeout=60, volumes=None)
+        
+        if docker_result["status"] != "success":
+            error_msg = f"ExifTool failed: {docker_result.get('stderr', docker_result.get('message', 'Unknown error'))}"
+            safe_log_error(logger, error_msg)
+            return json.dumps({"status": "error", "message": error_msg})
+        
+        # Parse output
+        stdout = docker_result.get("stdout", "")
+        stderr = docker_result.get("stderr", "")
+        
+        # For JSON output, return verbatim
+        if output_format == "json":
+            if stdout:
+                # ExifTool JSON output is already valid JSON (array of objects)
+                # Return it verbatim
+                safe_log_info(logger, f"[exiftool_search] Complete - returning JSON verbatim", file_path=file_path)
+                return stdout
+            else:
+                # No metadata found or empty output
+                safe_log_info(logger, f"[exiftool_search] Complete - no metadata found", file_path=file_path)
+                return json.dumps([])  # Empty array for no results
+        
+        # For text output, return stdout verbatim
+        safe_log_info(logger, f"[exiftool_search] Complete - returning text verbatim", file_path=file_path)
+        return stdout if stdout else stderr
         
     except Exception as e:
         safe_log_error(logger, f"[exiftool_search] Error: {str(e)}", exc_info=True)
-        return json.dumps({"status": "error", "message": f"ExifTool search failed: {str(e)}"})
+        return json.dumps({"status": "error", "message": f"ExifTool extraction failed: {str(e)}"})
