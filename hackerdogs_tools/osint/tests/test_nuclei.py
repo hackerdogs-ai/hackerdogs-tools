@@ -38,19 +38,15 @@ class TestNucleiStandalone:
         # Use mock runtime since ToolRuntime is auto-injected in LangChain 1.x
         runtime = create_mock_runtime(state={"user_id": "test_user"})
         
-        # Use a random real domain instead of reserved example.com
-        # Use "good" domains if malicious domain files are missing
-        try:
-            pass
-        except FileNotFoundError:
-            # Fallback to good domains if malicious files are missing
-            test_domain = get_random_domain("good")
+        # Use local IP address for safe testing (192.168.5.* and 192.168.4.*)
+        # Test with localhost or local IP
+        test_target = "http://192.168.5.1"
         
         # Tools are StructuredTool objects - use invoke() method
         # Nuclei requires "target" parameter, not "domain"
         result = nuclei_scan.invoke({
             "runtime": runtime,
-            "target": f"https://{test_domain}",
+            "target": test_target,
             "templates": None,
             "severity": None,
             "tags": None
@@ -67,7 +63,7 @@ class TestNucleiStandalone:
         print("=" * 80 + "\n")
         
         # Save standalone result - complete result as-is
-        result_file = save_test_result("nuclei", "standalone", result_data, test_domain)
+        result_file = save_test_result("nuclei", "standalone", result_data, test_target.replace("://", "_").replace(".", "_"))
         print(f"📁 JSON result saved to: {result_file}")
         
         # Assertions

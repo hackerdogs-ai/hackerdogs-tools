@@ -43,8 +43,8 @@ class TestAbuseipdbStandalone:
         
         # Tools are StructuredTool objects - use invoke() method
         # AbuseIPDB requires "ip" parameter, not "domain"
-        # Use a test IP address (8.8.8.8 - Google DNS)
-        test_ip = "8.8.8.8"
+        # Use local IP addresses from 192.168.5.* and 192.168.4.* ranges for safe testing
+        test_ip = "192.168.5.1"
         result = abuseipdb_search.invoke({
             "runtime": runtime,
             "ip": test_ip,
@@ -53,32 +53,29 @@ class TestAbuseipdbStandalone:
         })
         
         # Parse result
-        result_data = json.loads(result)
+        try:
+            result_data = json.loads(result)
+        except json.JSONDecodeError:
+            result_data = {"output": result, "format": "raw_text"}
         
         # Print JSON output for verification
         print("\n" + "=" * 80)
         print("TOOL JSON OUTPUT:")
         print("=" * 80)
-        print(json.dumps(result_data, indent=2))
+        print(json.dumps(result_data, indent=2) if isinstance(result_data, dict) else result[:500])
         print("=" * 80 + "\n")
         
-                # Save LangChain agent result - complete result as-is, no truncation, no decoration
+        # Save standalone result
         try:
-            result_data = serialize_langchain_result(result)
-            result_file = save_test_result("abuseipdb", "langchain", result_data, test_domain)
-            print(f"📁 LangChain result saved to: {result_file}")
+            result_file = save_test_result("abuseipdb", "standalone", result_data, test_ip.replace(".", "_"))
+            print(f"📁 Result saved to: {result_file}")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"⚠️  Could not save result: {e}")
         
-                
-        # Print agent result for verification
-        print("\n" + "=" * 80)
-        print("LANGCHAIN AGENT RESULT:")
-        print("=" * 80)
-        if "messages" in result:
-            for msg in result["messages"]:
-                print(f"  {msg.__class__.__name__}: {str(msg.content)[:200]}")
-        print("=" * 80 + "\n")
+        # Assertions
+        assert result is not None, "Tool returned None"
+        print(f"✅ Tool executed successfully")
+        print(f"   IP: {test_ip}")
 
 
 class TestAbuseipdbCrewAI:
@@ -103,13 +100,13 @@ class TestAbuseipdbCrewAI:
     
     def test_abuseipdb_crewai_agent(self, agent, llm):
         """Test abuseipdb tool with CrewAI agent."""
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local IP address for safe testing
+        test_ip = "192.168.4.1"
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Abuseipdb",
+            description=f"Check IP reputation for {test_ip} using AbuseIPDB",
             agent=agent,
-            expected_output="Results from abuseipdb tool"
+            expected_output="IP reputation results from abuseipdb tool"
         )
         
         crew = Crew(
@@ -126,7 +123,8 @@ class TestAbuseipdbCrewAI:
         assert result is not None, "CrewAI returned None"
         # Save CrewAI agent result - complete result as-is
         try:
-            result_file = save_test_result("abuseipdb", "crewai", result_data, test_domain)
+            result_data = serialize_crewai_result(result) if result else None
+            result_file = save_test_result("abuseipdb", "crewai", result_data, test_ip.replace(".", "_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
@@ -166,13 +164,13 @@ def run_all_tests():
             tools=tools,
             system_prompt="You are a cybersecurity analyst. Use the abuseipdb tool for OSINT operations."
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local IP address for safe testing
+        test_ip = "192.168.5.1"
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Abuseipdb")]
+            "messages": [HumanMessage(content=f"Check IP reputation for {test_ip} using AbuseIPDB")]
         })
         
         # Assertions
@@ -182,7 +180,7 @@ def run_all_tests():
         # Save LangChain agent result
         try:
             result_data = serialize_langchain_result(result)
-            result_file = save_test_result("abuseipdb", "langchain", result_data, test_domain)
+            result_file = save_test_result("abuseipdb", "langchain", result_data, test_ip.replace(".", "_"))
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
@@ -206,13 +204,13 @@ def run_all_tests():
             llm=llm,
             verbose=True
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local IP address for safe testing
+        test_ip = "192.168.4.1"
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Abuseipdb",
+            description=f"Check IP reputation for {test_ip} using AbuseIPDB",
             agent=agent,
-            expected_output="Results from abuseipdb tool"
+            expected_output="IP reputation results from abuseipdb tool"
         )
         
         crew = Crew(
@@ -231,7 +229,7 @@ def run_all_tests():
         # Save CrewAI agent result
         try:
             result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("abuseipdb", "crewai", result_data, test_domain)
+            result_file = save_test_result("abuseipdb", "crewai", result_data, test_ip.replace(".", "_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")

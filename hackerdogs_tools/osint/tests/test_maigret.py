@@ -77,19 +77,20 @@ class TestMaigretStandalone:
             traceback.print_exc()
             raise
         
-        # Assertions
-        assert "status" in result_data, f"Missing 'status' in result: {result_data}"
-        assert result_data["status"] in ["success", "error"], f"Invalid status: {result_data.get('status')}"
-        
-        if result_data["status"] == "success":
-            assert "usernames" in result_data, f"Missing 'usernames' in result: {result_data}"
-            print(f"✅ Tool executed successfully")
-            print(f"   Usernames: {result_data.get('usernames')}")
-            print(f"   Execution method: {result_data.get('execution_method', 'docker')}")
-        else:
-            # If error, should have message
+        # Assertions - maigret returns raw JSON verbatim (dict with site names as keys)
+        # Check if it's an error dict or the raw JSON result
+        if isinstance(result_data, dict) and "status" in result_data and result_data.get("status") == "error":
             assert "message" in result_data, f"Error status but no message: {result_data}"
             print(f"⚠️  Tool returned error: {result_data.get('message')}")
+        else:
+            # Raw JSON result - should be a dict with site names as keys
+            assert isinstance(result_data, dict), f"Expected dict, got {type(result_data)}"
+            print(f"✅ Tool executed successfully")
+            print(f"   Username: {test_username}")
+            print(f"   Sites found: {len(result_data)}")
+            if len(result_data) > 0:
+                sample_site = list(result_data.keys())[0]
+                print(f"   Sample site: {sample_site}")
 
 
 class TestMaigretLangChain:
@@ -167,8 +168,15 @@ class TestMaigretCrewAI:
         """Create CrewAI agent with maigret tool."""
         return Agent(
             role="OSINT Analyst",
-            goal="Perform OSINT operations using maigret",
-            backstory="You are an expert OSINT analyst.",
+            goal="Perform OSINT operations using maigret and return raw tool output verbatim without modification",
+            backstory=(
+                "You are an expert OSINT analyst. Your primary responsibility is to execute OSINT tools "
+                "and return their output EXACTLY as provided by the tool, without any summarization, "
+                "interpretation, or modification. When a tool returns JSON, CSV, or any structured data, "
+                "you MUST return it verbatim in your Final Answer. Do NOT summarize, do NOT extract key points, "
+                "do NOT reformat - return the complete raw output exactly as the tool provides it. "
+                "This is critical for data integrity and downstream processing."
+            ),
             tools=[MaigretTool()],
             llm=llm,
             verbose=True
@@ -180,9 +188,18 @@ class TestMaigretCrewAI:
         test_username = get_random_username()
         
         task = Task(
-            description=f"Search for username {test_username} using Maigret",
+            description=(
+                f"Search for username {test_username} using Maigret tool. "
+                "CRITICAL: You MUST return the raw JSON output from the tool EXACTLY as it appears in the Observation, "
+                "without any modification, summarization, or interpretation. Copy the complete JSON content verbatim "
+                "from the tool's Observation into your Final Answer. Do NOT create summaries, do NOT extract key points, "
+                "do NOT reformat - return the raw JSON string exactly as provided by the tool."
+            ),
             agent=agent,
-            expected_output="Username search results from maigret tool"
+            expected_output=(
+                "The complete raw JSON output from the maigret tool, returned verbatim without any modification. "
+                "This must be the exact JSON string from the tool's Observation field, copied directly into the Final Answer."
+            )
         )
         
         crew = Crew(

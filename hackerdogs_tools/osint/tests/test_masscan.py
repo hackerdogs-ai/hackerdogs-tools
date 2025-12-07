@@ -38,44 +38,47 @@ class TestMasscanStandalone:
         # Use mock runtime since ToolRuntime is auto-injected in LangChain 1.x
         runtime = create_mock_runtime(state={"user_id": "test_user"})
         
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local network ranges for safe testing (192.168.5.* and 192.168.4.*)
+        # Test with 192.168.5.0/24 range
+        test_ip_range = "192.168.5.0/24"
+        test_ports = "80,443,22"
+        test_rate = 1000
         
         # Tools are StructuredTool objects - use invoke() method
         result = masscan_scan.invoke({
             "runtime": runtime,
-            "domain": test_domain,
-            "recursive": False,
-            "silent": True
+            "ip_range": test_ip_range,
+            "ports": test_ports,
+            "rate": test_rate
         })
         
-        # Parse result
-        result_data = json.loads(result)
+        # Parse result - masscan returns raw stdout/stderr verbatim
+        try:
+            result_data = json.loads(result)
+        except json.JSONDecodeError:
+            # If not JSON, it's raw stdout/stderr - this is valid
+            result_data = {"output": result, "format": "raw_text"}
         
         # Print JSON output for verification
         print("\n" + "=" * 80)
         print("TOOL JSON OUTPUT:")
         print("=" * 80)
-        print(json.dumps(result_data, indent=2))
+        print(json.dumps(result_data, indent=2) if isinstance(result_data, dict) else result[:500])
         print("=" * 80 + "\n")
         
-                # Save LangChain agent result - complete result as-is, no truncation, no decoration
+        # Save standalone result
         try:
-            result_data = serialize_langchain_result(result)
-            result_file = save_test_result("masscan", "langchain", result_data, test_domain)
-            print(f"📁 LangChain result saved to: {result_file}")
+            result_file = save_test_result("masscan", "standalone", result_data, test_ip_range.replace("/", "_"))
+            print(f"📁 Result saved to: {result_file}")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"⚠️  Could not save result: {e}")
         
-                
-        # Print agent result for verification
-        print("\n" + "=" * 80)
-        print("LANGCHAIN AGENT RESULT:")
-        print("=" * 80)
-        if "messages" in result:
-            for msg in result["messages"]:
-                print(f"  {msg.__class__.__name__}: {str(msg.content)[:200]}")
-        print("=" * 80 + "\n")
+        # Assertions
+        assert result is not None, "Tool returned None"
+        print(f"✅ Tool executed successfully")
+        print(f"   IP Range: {test_ip_range}")
+        print(f"   Ports: {test_ports}")
+        print(f"   Rate: {test_rate}")
 
 
 class TestMasscanCrewAI:
@@ -100,13 +103,13 @@ class TestMasscanCrewAI:
     
     def test_masscan_crewai_agent(self, agent, llm):
         """Test masscan tool with CrewAI agent."""
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local network range for safe testing
+        test_ip_range = "192.168.4.0/24"
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Masscan",
+            description=f"Scan IP range {test_ip_range} on ports 80,443,22 using Masscan",
             agent=agent,
-            expected_output="Results from masscan tool"
+            expected_output="Port scan results from masscan tool"
         )
         
         crew = Crew(
@@ -160,13 +163,13 @@ def run_all_tests():
             tools=tools,
             system_prompt="You are a cybersecurity analyst. Use the masscan tool for OSINT operations."
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local network range for safe testing
+        test_ip_range = "192.168.5.0/24"
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Masscan")]
+            "messages": [HumanMessage(content=f"Scan IP range {test_ip_range} on ports 80,443,22 using Masscan")]
         })
         
         # Assertions
@@ -176,7 +179,7 @@ def run_all_tests():
         # Save LangChain agent result
         try:
             result_data = serialize_langchain_result(result)
-            result_file = save_test_result("masscan", "langchain", result_data, test_domain)
+            result_file = save_test_result("masscan", "langchain", result_data, test_ip_range.replace("/", "_"))
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
@@ -198,13 +201,13 @@ def run_all_tests():
             llm=llm,
             verbose=True
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use local network range for safe testing
+        test_ip_range = "192.168.4.0/24"
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Masscan",
+            description=f"Scan IP range {test_ip_range} on ports 80,443,22 using Masscan",
             agent=agent,
-            expected_output="Results from masscan tool"
+            expected_output="Port scan results from masscan tool"
         )
         
         crew = Crew(
@@ -223,7 +226,7 @@ def run_all_tests():
         # Save CrewAI agent result
         try:
             result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("masscan", "crewai", result_data, test_domain)
+            result_file = save_test_result("masscan", "crewai", result_data, test_ip_range.replace("/", "_"))
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
