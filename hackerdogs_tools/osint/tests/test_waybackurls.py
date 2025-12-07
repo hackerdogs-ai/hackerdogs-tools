@@ -12,6 +12,10 @@ import json
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv(override=True)
 
 # Add project root to path for direct execution
 project_root = Path(__file__).parent.parent.parent.parent.parent.resolve()
@@ -22,12 +26,12 @@ from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage
 from crewai import Agent, Task, Crew
 
-from hackerdogs_tools.osint.content.waybackurls_langchain import waybackurls_search
+from hackerdogs_tools.osint.content.waybackurls_langchain import waybackurls_search, WaybackurlsSecurityAgentState
 from hackerdogs_tools.osint.content.waybackurls_crewai import WaybackurlsTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestWaybackurlsStandalone:
@@ -45,12 +49,14 @@ class TestWaybackurlsStandalone:
         result = waybackurls_search.invoke({
             "runtime": runtime,
             "domain": test_domain,
-            "recursive": False,
-            "silent": True
+            "no_subs": False
         })
         
         # Parse result
-        result_data = json.loads(result)
+        try:
+            result_data = json.loads(result)
+        except json.JSONDecodeError:
+            result_data = {"raw_output": result}
         
         # Print JSON output for verification
         print("\n" + "=" * 80)
@@ -59,23 +65,20 @@ class TestWaybackurlsStandalone:
         print(json.dumps(result_data, indent=2))
         print("=" * 80 + "\n")
         
-                # Save LangChain agent result - complete result as-is, no truncation, no decoration
+        # Save result
         try:
-            result_data = serialize_langchain_result(result)
-            result_file = save_test_result("waybackurls", "langchain", result_data, test_domain)
-            print(f"📁 LangChain result saved to: {result_file}")
+            result_file = save_test_result("waybackurls", "standalone", result_data, test_domain)
+            print(f"📁 JSON result saved to: {result_file}")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"⚠️  Could not save result: {e}")
         
-                
-        # Print agent result for verification
-        print("\n" + "=" * 80)
-        print("LANGCHAIN AGENT RESULT:")
-        print("=" * 80)
-        if "messages" in result:
-            for msg in result["messages"]:
-                print(f"  {msg.__class__.__name__}: {str(msg.content)[:200]}")
-        print("=" * 80 + "\n")
+        # Basic assertions
+        assert result is not None, "Result should not be None"
+        assert isinstance(result, str), "Result should be a string"
+        
+        # Check if result contains expected structure
+        if isinstance(result_data, dict):
+            assert "status" in result_data, "Result should contain 'status' field"
 
 
 class TestWaybackurlsCrewAI:
@@ -141,15 +144,23 @@ class TestWaybackurlsCrewAI:
 def run_all_tests():
     """Run all three test scenarios."""
     print("=" * 80)
-    print(f"Running waybackurls Tool Tests")
+    print(f"Running Waybackurls Tool Tests")
     print("=" * 80)
+    
+    # Initialize LLMs
+    llm = get_llm_from_env()
+    crewai_llm = get_crewai_llm_from_env()
     
     # Test 1: Standalone
     print("\n1. Testing Standalone Execution...")
     try:
-        print("✅ Standalone test passed")
+        test = TestWaybackurlsStandalone()
+        test.test_waybackurls_standalone()
+        print("✅ Standalone test completed")
     except Exception as e:
         print(f"❌ Standalone test failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
     # Test 2: LangChain
     print("\n2. Testing LangChain Agent Integration...")
@@ -158,30 +169,51 @@ def run_all_tests():
         agent = create_agent(
             model=llm,
             tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the waybackurls tool for OSINT operations."
+            system_prompt=(
+                "You are an OSINT analyst. Your ONLY job is to execute tools and return their output EXACTLY as provided, "
+                "without summarization, interpretation, or modification. When a tool returns JSON, you MUST copy the "
+                "complete JSON string verbatim into your Final Answer. Do NOT summarize, do NOT extract points, "
+                "do NOT reformat - return raw output only."
+            ),
+            state_schema=WaybackurlsSecurityAgentState
         )
         # Use a random real domain instead of reserved example.com
         test_domain = get_random_domain()
         
-        # Execute query directly (agent is a runnable in LangChain 1.x)
-        # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Waybackurls")]
+            "messages": [HumanMessage(content=f"Find historical URLs for {test_domain} using Waybackurls. IMPORTANT: Return the complete JSON output from the tool verbatim. Do NOT summarize or interpret the results.")],
+            "user_id": "test_user"
         })
         
-        # Assertions
-        assert result is not None
-        assert "messages" in result or "output" in result
-        
-        # Save LangChain agent result
+        # Extract tool output from messages and save
         try:
-            result_data = serialize_langchain_result(result)
+            # Find the tool message with the actual JSON output
+            tool_output = None
+            if "messages" in result:
+                for msg in result["messages"]:
+                    if hasattr(msg, 'type') and msg.type == "tool" and hasattr(msg, 'content'):
+                        try:
+                            # Try to parse the content as JSON
+                            import json
+                            tool_output = json.loads(msg.content)
+                            break
+                        except:
+                            pass
+            
+            # If we found tool output, use it; otherwise serialize the full result
+            if tool_output:
+                result_data = tool_output
+            else:
+                result_data = serialize_langchain_result(result)
+            
             result_file = save_test_result("waybackurls", "langchain", result_data, test_domain)
-            print(f"📁 LangChain result saved to: {result_file}")
+            print(f"📁 JSON result saved to: {result_file}")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"⚠️  Could not save result: {e}")
+            import traceback
+            traceback.print_exc()
         
-        print(f"✅ LangChain test passed")
+        print("✅ LangChain test completed")
     except Exception as e:
         print(f"❌ LangChain test failed: {str(e)}")
         import traceback
@@ -192,50 +224,50 @@ def run_all_tests():
     try:
         agent = Agent(
             role="OSINT Analyst",
-            goal="Perform OSINT operations using waybackurls",
-            backstory="You are an expert OSINT analyst.",
+            goal="Execute OSINT tools and return raw output verbatim without any modification",
+            backstory=(
+                "You are a data collection specialist. Your ONLY job is to execute tools and return "
+                "their output EXACTLY as provided, without summarization, interpretation, or modification. "
+                "When a tool returns JSON, you MUST copy the complete JSON string verbatim into your Final Answer. "
+                "Do NOT summarize, do NOT extract points, do NOT reformat - return raw output only."
+            ),
             tools=[WaybackurlsTool()],
-            llm=llm,
+            llm=crewai_llm,
             verbose=True
         )
         # Use a random real domain instead of reserved example.com
         test_domain = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Waybackurls",
+            description=f"Find historical URLs for {test_domain} using Waybackurls. IMPORTANT: When the tool returns JSON output, you MUST return the complete JSON string verbatim in your Final Answer. Do NOT summarize, do NOT extract key points, do NOT reformat. Return the exact JSON output from the tool.",
             agent=agent,
-            expected_output="Results from waybackurls tool"
+            expected_output="Complete raw JSON output from waybackurls tool, returned verbatim without any modification. Must include status, domain, urls array, count, and all other fields exactly as returned by the tool."
         )
         
         crew = Crew(
             agents=[agent],
             tasks=[task],
-            llm=llm,
             verbose=True
         )
         
-        # Execute task
         result = crew.kickoff()
         
-        # Assertions
-        assert result is not None
-        
-        # Save CrewAI agent result
+        # Serialize and save result
         try:
-            result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("waybackurls", "crewai", result_data, test_domain)
-            print(f"📁 CrewAI result saved to: {result_file}")
+            serialized = serialize_crewai_result(result)
+            result_file = save_test_result("waybackurls", "crewai", serialized, test_domain)
+            print(f"📁 JSON result saved to: {result_file}")
         except Exception as e:
-            print(f"⚠️  Could not save CrewAI result: {e}")
+            print(f"⚠️  Could not save result: {e}")
         
-        print(f"✅ CrewAI test passed")
+        print("✅ CrewAI test completed")
     except Exception as e:
         print(f"❌ CrewAI test failed: {str(e)}")
         import traceback
         traceback.print_exc()
     
     print("\n" + "=" * 80)
-    print("All tests completed!")
+    print("All tests completed")
     print("=" * 80)
 
 

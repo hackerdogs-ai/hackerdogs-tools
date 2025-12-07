@@ -46,7 +46,7 @@ google-auth==2.43.0
 googleapis-common-protos==1.72.0
 grpcio==1.67.1
 h11==0.16.0
--e git+https://github.com/hackerdogs-ai/hackerdogs-tools.git@9c270ce5c1177b33f52b73a165b94d2a1b6b05b8#egg=hackerdogs_tools
+-e git+https://github.com/hackerdogs-ai/hackerdogs-tools.git@94f794422f023674ab1cc3ee80a820487bbe56b0#egg=hackerdogs_tools
 hd-logging==1.0.1
 hf-xet==1.2.0
 html5lib==1.1
@@ -223,6 +223,7 @@ uvicorn==0.38.0
 uvloop==0.22.1
 virtualenv==20.35.4
 watchfiles==1.1.1
+waybackpy==3.0.6
 webencodings==0.5.1
 websocket-client==1.9.0
 websockets==15.0.1
