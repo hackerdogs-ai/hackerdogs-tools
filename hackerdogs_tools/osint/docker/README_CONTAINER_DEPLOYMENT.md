@@ -52,7 +52,12 @@ docker build -t osint-tools:latest .
 ```bash
 # Use the full-stack compose file
 docker-compose -f docker-compose.full-stack.yml up -d
+
+# Or use standard compose (includes Tor proxy for OnionSearch)
+docker-compose up -d
 ```
+
+**Note:** The standard `docker-compose.yml` includes a Tor proxy service required for **OnionSearch** (Dark Web search tool). If you're using the full-stack compose, you may need to add Tor proxy separately.
 
 ### Step 3: Verify
 
@@ -236,6 +241,25 @@ docker-compose up -d osint-tools
 docker run -d --name osint-tools osint-tools:latest
 ```
 
+### Issue: "OnionSearch not working (Tor proxy)"
+
+**Problem:** OnionSearch requires Tor proxy but it's not running.
+
+**Solution:**
+```bash
+# Check Tor proxy is running
+docker ps | grep tor-proxy
+
+# Check Tor logs
+docker logs tor-proxy
+
+# Test Tor connection
+docker exec osint-tools curl --socks5-hostname tor-proxy:9050 https://check.torproject.org/api/ip
+
+# Restart Tor proxy
+docker-compose restart tor-proxy
+```
+
 ---
 
 ## 🔄 Alternative: Sidecar Pattern
@@ -269,6 +293,36 @@ services:
 
 ---
 
+## 🔒 Tor Proxy for OnionSearch
+
+**OnionSearch** (Dark Web search tool) requires a Tor proxy to access .onion sites. The `docker-compose.yml` includes a Tor proxy service:
+
+```yaml
+tor-proxy:
+  image: dperson/torproxy:latest
+  ports:
+    - "9050:9050"  # SOCKS5 proxy
+```
+
+**How it works:**
+- Tor proxy runs in separate container
+- `osint-tools` connects via Docker network: `tor-proxy:9050`
+- OnionSearch automatically uses `--proxy tor-proxy:9050`
+- Health check ensures Tor is ready before OSINT tools start
+
+**Verification:**
+```bash
+# Check Tor is running
+docker ps | grep tor-proxy
+
+# Test Tor from osint-tools
+docker exec osint-tools curl --socks5-hostname tor-proxy:9050 https://check.torproject.org/api/ip
+```
+
+**See `docker/README.md` for detailed Tor proxy setup.**
+
+---
+
 ## ✅ Summary
 
 **Yes, tools in Docker can call binaries in another Docker container!**
@@ -277,6 +331,7 @@ services:
 1. Mount Docker socket: `-v /var/run/docker.sock:/var/run/docker.sock`
 2. Both containers on same Docker network
 3. Shared volume for file I/O (optional)
+4. **Tor proxy** (for OnionSearch) - automatically included in docker-compose.yml
 
 **Your `docker_client.py` already supports this!** Just mount the socket when running your app in Docker.
 

@@ -25,7 +25,7 @@ services:
     depends_on:
       - osint-tools
     networks:
-      - osint-network
+      - hd-tools
     restart: unless-stopped
 
   # OSINT Binaries Container
@@ -53,13 +53,13 @@ services:
           cpus: '1'
           memory: 1G
     networks:
-      - osint-network
+      - hd-tools
     # Keep container running
     command: tail -f /dev/null
     restart: unless-stopped
 
 networks:
-  osint-network:
+  hd-tools:
     driver: bridge
 
 # Volumes (optional - for persistent data)

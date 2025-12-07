@@ -25,10 +25,22 @@ docker build -t osint-tools:latest .
 
 ```bash
 # Option A: Docker Compose (recommended)
+# This automatically starts Tor proxy for OnionSearch
 docker-compose up -d
 
-# Option B: Manual
+# Option B: Manual (without Tor proxy)
 docker run -d --name osint-tools osint-tools:latest
+
+# Option C: Manual with Tor proxy (for OnionSearch)
+# First, start Tor proxy
+docker run -d --name tor-proxy -p 9050:9050 dperson/torproxy:latest
+
+# Then start osint-tools with Tor proxy
+docker run -d \
+  --name osint-tools \
+  --network host \
+  -e TOR_PROXY=127.0.0.1:9050 \
+  osint-tools:latest
 ```
 
 ### Step 3: Use Tools
@@ -76,9 +88,10 @@ Tool Call
 ### Python Tools
 - sublist3r, dnsrecon, theHarvester
 - sherlock-project, maigret, ghunt, holehe
+- onionsearch (Dark Web search - requires Tor proxy)
 - scrapy, waybackpy, exifread
 
-**Total:** All 21 OSINT tools in one image!
+**Total:** All 22 OSINT tools in one image!
 
 ---
 
@@ -122,9 +135,17 @@ export OSINT_DOCKER_RUNTIME="docker"
 ### Docker Compose
 
 Edit `docker/docker-compose.yml` to adjust:
+- **Tor Proxy** - Required for OnionSearch (Dark Web searches)
 - Resource limits (CPU/memory)
 - Volume mounts
 - Network settings
+
+**Tor Proxy Configuration:**
+- Automatically included in `docker-compose.yml`
+- Uses `dperson/torproxy:latest` image
+- Exposes SOCKS5 proxy on port `9050`
+- Health check ensures Tor is ready before OSINT tools start
+- OnionSearch automatically connects via `tor-proxy:9050` (Docker service name)
 
 ---
 
@@ -162,6 +183,22 @@ docker build -t osint-tools:latest .
 # Add user to docker group (Linux)
 sudo usermod -aG docker $USER
 newgrp docker
+```
+
+### OnionSearch Not Working (Tor Proxy Issues)
+
+```bash
+# Check Tor proxy is running
+docker ps | grep tor-proxy
+
+# Check Tor logs
+docker logs tor-proxy
+
+# Test Tor connection
+docker exec osint-tools curl --socks5-hostname tor-proxy:9050 https://check.torproject.org/api/ip
+
+# If Tor not running, restart services
+docker-compose restart tor-proxy
 ```
 
 ---

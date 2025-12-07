@@ -64,6 +64,7 @@ The Docker image includes:
 - ✅ **maigret** - Advanced username search
 - ✅ **ghunt** - Google account investigation
 - ✅ **holehe** - Email registration checker
+- ✅ **onionsearch** - Dark Web (.onion) search engine scraper
 - ✅ **scrapy** - Web scraping framework
 - ✅ **waybackpy** - Wayback Machine API
 - ✅ **exifread** - EXIF metadata reader
@@ -98,10 +99,59 @@ export OSINT_WORKSPACE="/tmp/osint-workspace"
 ## Docker Compose Configuration
 
 The `docker-compose.yml` includes:
+- **Tor Proxy Service** - Required for OnionSearch tool (Dark Web searches)
 - Resource limits (CPU/memory)
 - Volume mounts for workspace
 - Network isolation
 - Auto-restart policy
+
+### Tor Proxy Setup
+
+**OnionSearch** requires a Tor proxy to access Dark Web (.onion) search engines. The `docker-compose.yml` automatically includes a Tor proxy service:
+
+```yaml
+tor-proxy:
+  image: dperson/torproxy:latest
+  ports:
+    - "9050:9050"  # SOCKS5 proxy
+```
+
+**How it works:**
+1. Tor proxy runs in separate container (`tor-proxy`)
+2. Exposes SOCKS5 proxy on port `9050`
+3. `osint-tools` container connects via Docker network: `tor-proxy:9050`
+4. OnionSearch automatically uses `--proxy tor-proxy:9050`
+
+**Verification:**
+```bash
+# Check Tor is running
+docker ps | grep tor-proxy
+
+# Test Tor connection from osint-tools
+docker exec osint-tools curl --socks5-hostname tor-proxy:9050 https://check.torproject.org/api/ip
+
+# Check Tor logs
+docker logs tor-proxy
+```
+
+**Note:** Tor takes ~30-60 seconds to bootstrap. The health check ensures `osint-tools` waits until Tor is ready before starting.
+
+**Manual Setup (if not using docker-compose):**
+```bash
+# Run Tor proxy
+docker run -d \
+  --name tor-proxy \
+  --network hd-tools \
+  -p 9050:9050 \
+  dperson/torproxy:latest
+
+# Start osint-tools with Tor proxy
+docker run -d \
+  --name osint-tools \
+  --network hd-tools \
+  -e TOR_PROXY=tor-proxy:9050 \
+  osint-tools:latest
+```
 
 ## Security Considerations
 

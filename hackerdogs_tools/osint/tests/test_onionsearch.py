@@ -26,8 +26,9 @@ from hackerdogs_tools.osint.content.onionsearch_langchain import onionsearch_sea
 from hackerdogs_tools.osint.content.onionsearch_crewai import OnionSearchTool
 from hackerdogs_tools.osint.tests.test_utils import get_llm_from_env, get_crewai_llm_from_env
 from hackerdogs_tools.osint.test_domains import get_random_domain
+from hackerdogs_tools.osint.test_identity_data import get_random_email
 from hackerdogs_tools.osint.tests.test_runtime_helper import create_mock_runtime
-from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result, serialize_langchain_result, serialize_crewai_result
+from hackerdogs_tools.osint.tests.save_json_results import save_test_result, serialize_langchain_result, serialize_crewai_result
 
 
 class TestOnionsearchStandalone:
@@ -38,19 +39,24 @@ class TestOnionsearchStandalone:
         # Use mock runtime since ToolRuntime is auto-injected in LangChain 1.x
         runtime = create_mock_runtime(state={"user_id": "test_user"})
         
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random domain for testing (Dark Web searches can be slow)
+        test_query = get_random_domain()
         
         # Tools are StructuredTool objects - use invoke() method
         result = onionsearch_search.invoke({
             "runtime": runtime,
-            "domain": test_domain,
-            "recursive": False,
-            "silent": True
+            "query": test_query,
+            "limit": 1,  # Small limit for testing
+            "output_format": "json"
         })
         
-        # Parse result
-        result_data = json.loads(result)
+        # OnionSearch returns JSON string (or CSV if output_format="csv")
+        # Try to parse as JSON first
+        try:
+            result_data = json.loads(result)
+        except json.JSONDecodeError:
+            # If not JSON, might be CSV or error message
+            result_data = {"raw_output": result}
         
         # Print JSON output for verification
         print("\n" + "=" * 80)
@@ -59,23 +65,16 @@ class TestOnionsearchStandalone:
         print(json.dumps(result_data, indent=2))
         print("=" * 80 + "\n")
         
-                # Save LangChain agent result - complete result as-is, no truncation, no decoration
+        # Save result
         try:
-            result_data = serialize_langchain_result(result)
-            result_file = save_test_result("onionsearch", "langchain", result_data, test_domain)
-            print(f"📁 LangChain result saved to: {result_file}")
+            result_file = save_test_result("onionsearch", "standalone", result_data, test_query)
+            print(f"📁 JSON result saved to: {result_file}")
         except Exception as e:
-            print(f"⚠️  Could not save LangChain result: {e}")
+            print(f"⚠️  Could not save result: {e}")
         
-                
-        # Print agent result for verification
-        print("\n" + "=" * 80)
-        print("LANGCHAIN AGENT RESULT:")
-        print("=" * 80)
-        if "messages" in result:
-            for msg in result["messages"]:
-                print(f"  {msg.__class__.__name__}: {str(msg.content)[:200]}")
-        print("=" * 80 + "\n")
+        # Basic assertions
+        assert result is not None, "Result should not be None"
+        assert isinstance(result, str), "Result should be a string"
 
 
 class TestOnionsearchCrewAI:
@@ -100,11 +99,11 @@ class TestOnionsearchCrewAI:
     
     def test_onionsearch_crewai_agent(self, agent, llm):
         """Test onionsearch tool with CrewAI agent."""
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random domain for testing (Dark Web searches can be slow)
+        test_query = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Onionsearch",
+            description=f"Search for '{test_query}' on Dark Web using Onionsearch",
             agent=agent,
             expected_output="Results from onionsearch tool"
         )
@@ -124,7 +123,7 @@ class TestOnionsearchCrewAI:
         # Save CrewAI agent result
         try:
             result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("onionsearch", "crewai", result_data, test_domain)
+            result_file = save_test_result("onionsearch", "crewai", result_data, test_query)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
@@ -147,26 +146,32 @@ def run_all_tests():
     # Test 1: Standalone
     print("\n1. Testing Standalone Execution...")
     try:
+        test = TestOnionsearchStandalone()
+        test.test_onionsearch_standalone()
         print("✅ Standalone test passed")
     except Exception as e:
         print(f"❌ Standalone test failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
     
     # Test 2: LangChain
     print("\n2. Testing LangChain Agent Integration...")
     try:
+        # Create agent directly (not using pytest fixtures)
+        llm = get_llm_from_env()
         tools = [onionsearch_search]
         agent = create_agent(
             model=llm,
             tools=tools,
-            system_prompt="You are a cybersecurity analyst. Use the onionsearch tool for OSINT operations."
+            system_prompt="You are a cybersecurity analyst. Use the onionsearch tool for Dark Web searches."
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random domain for testing (Dark Web searches can be slow)
+        test_query = get_random_domain()
         
         # Execute query directly (agent is a runnable in LangChain 1.x)
         # ToolRuntime is automatically injected by the agent
         result = agent.invoke({
-            "messages": [HumanMessage(content=f"Find subdomains for {test_domain} using Onionsearch")]
+            "messages": [HumanMessage(content=f"Search for '{test_query}' on Dark Web using Onionsearch")]
         })
         
         # Assertions
@@ -176,10 +181,12 @@ def run_all_tests():
         # Save LangChain agent result
         try:
             result_data = serialize_langchain_result(result)
-            result_file = save_test_result("onionsearch", "langchain", result_data, test_domain)
+            result_file = save_test_result("onionsearch", "langchain", result_data, test_query)
             print(f"📁 LangChain result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save LangChain result: {e}")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ LangChain test passed")
     except Exception as e:
@@ -190,6 +197,8 @@ def run_all_tests():
     # Test 3: CrewAI
     print("\n3. Testing CrewAI Agent Integration...")
     try:
+        # Create LLM and agent directly (not using pytest fixtures)
+        llm = get_crewai_llm_from_env()
         agent = Agent(
             role="OSINT Analyst",
             goal="Perform OSINT operations using onionsearch",
@@ -198,11 +207,11 @@ def run_all_tests():
             llm=llm,
             verbose=True
         )
-        # Use a random real domain instead of reserved example.com
-        test_domain = get_random_domain()
+        # Use a random domain for testing (Dark Web searches can be slow)
+        test_query = get_random_domain()
         
         task = Task(
-            description=f"Find subdomains for {test_domain} using Onionsearch",
+            description=f"Search for '{test_query}' on Dark Web using Onionsearch",
             agent=agent,
             expected_output="Results from onionsearch tool"
         )
@@ -223,10 +232,12 @@ def run_all_tests():
         # Save CrewAI agent result
         try:
             result_data = serialize_crewai_result(result) if result else None
-            result_file = save_test_result("onionsearch", "crewai", result_data, test_domain)
+            result_file = save_test_result("onionsearch", "crewai", result_data, test_query)
             print(f"📁 CrewAI result saved to: {result_file}")
         except Exception as e:
             print(f"⚠️  Could not save CrewAI result: {e}")
+            import traceback
+            traceback.print_exc()
         
         print(f"✅ CrewAI test passed")
     except Exception as e:

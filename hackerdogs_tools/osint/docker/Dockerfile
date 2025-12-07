@@ -78,6 +78,7 @@ RUN pip3 install --no-cache-dir \
     maigret \
     ghunt \
     holehe \
+    onionsearch \
     scrapy \
     waybackpy \
     internetarchive \

@@ -1,4 +1,22 @@
 services:
+  # Tor Proxy Service (required for OnionSearch)
+  tor-proxy:
+    image: dperson/torproxy:latest
+    container_name: tor-proxy
+    ports:
+      - "9050:9050"  # SOCKS5 proxy port
+      - "8118:8118"  # HTTP proxy port (optional)
+    networks:
+      - hd-tools
+    restart: unless-stopped
+    # Tor takes time to bootstrap - wait for it to be ready
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--socks5-hostname", "127.0.0.1:9050", "https://check.torproject.org/api/ip"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   osint-tools:
     build:
       context: .
@@ -13,6 +31,8 @@ services:
     environment:
       - OSINT_WORKSPACE=/workspace
       - OSINT_RESULTS=/results
+      # Tor proxy configuration (accessible via docker network)
+      - TOR_PROXY=tor-proxy:9050
     # Resource limits
     deploy:
       resources:
@@ -24,12 +44,15 @@ services:
           memory: 1G
     # Network isolation (optional)
     networks:
-      - osint-network
+      - hd-tools
     # Keep container running
     command: tail -f /dev/null
     restart: unless-stopped
+    depends_on:
+      tor-proxy:
+        condition: service_healthy
 
 networks:
-  osint-network:
+  hd-tools:
     driver: bridge
 

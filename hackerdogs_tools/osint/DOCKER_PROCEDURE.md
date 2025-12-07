@@ -275,7 +275,7 @@ services:
     
     # Network isolation
     networks:
-      - osint-network
+      - hd-tools
     
     # No privileged mode
     # (privileged: false by default)
