@@ -1,0 +1,168 @@
+"""
+{{ meta.name }} Tool for LangChain Agents
+
+{{ meta.summary }}
+{% if meta.dataSource %}
+Data Source: {{ meta.dataSource.website }}
+{% endif %}
+"""
+
+import json
+import os
+from typing import Optional, Dict, Any, List
+from langchain.tools import tool, ToolRuntime
+from langchain.agents import AgentState
+from pydantic import BaseModel, Field
+from hd_logging import setup_logger
+from hackerdogs_tools.tool_logging import safe_log_info, safe_log_error
+
+logger = setup_logger(__name__, log_file_path="logs/spiderfoot_{{ module_name }}_tool.log")
+
+
+class Sfp{{ module_class_name|replace("sfp_", "")|replace("_", "")|title }}SecurityAgentState(AgentState):
+    """Extended agent state for {{ meta.name }} operations."""
+    user_id: str = ""
+
+
+{% if has_api_key %}
+def _get_api_key(runtime: ToolRuntime) -> Optional[str]:
+    """Get API key from runtime state or environment variable."""
+    api_keys = runtime.state.get("api_keys", {})
+    # Try multiple key name variations
+    key = (
+        api_keys.get("{{ api_key_name|upper }}") or
+        api_keys.get("{{ api_key_name }}") or
+        api_keys.get("{{ module_name|upper }}_API_KEY") or
+        os.getenv("{{ api_key_name|upper }}") or
+        os.getenv("{{ api_key_name }}") or
+        os.getenv("{{ module_name|upper }}_API_KEY")
+    )
+    return key
+{% endif %}
+
+
+@tool
+def sfp_{{ module_name }}(
+    runtime: ToolRuntime,
+    target: str,
+{% for opt_name, opt_info in prepared_opts.items() %}
+{% if opt_name != "_maxthreads" and opt_name != "api_key" %}
+    {{ opt_name }}: {{ opt_info.type }} = {{ opt_info.json_value }},
+{% endif %}
+{% endfor %}
+{% if has_api_key %}
+    api_key: Optional[str] = None,
+{% endif %}
+    **kwargs: Any
+) -> str:
+    """
+    {{ meta.summary }}
+    
+    {% if meta.useCases %}
+    Use Cases: {{ meta.useCases|join(", ") }}
+    {% endif %}
+    
+    Args:
+        runtime: ToolRuntime instance (automatically injected).
+        target: Target to investigate ({{ watched_events|join(", ") }})
+{% for opt_name, opt_desc in optdescs.items() %}
+{% if opt_name != "_maxthreads" and opt_name != "api_key" %}
+        {{ opt_name }}: {{ opt_desc }}
+{% endif %}
+{% endfor %}
+{% if has_api_key %}
+        api_key: {{ optdescs.get("api_key", "API key for " + meta.name) }}
+{% endif %}
+    
+    Returns:
+        JSON string with results.
+    """
+    try:
+        safe_log_info(logger, f"[sfp_{{ module_name }}] Starting", target=target{% if has_api_key %}, has_api_key=bool(api_key){% endif %})
+        
+        # Get user_id from runtime state
+        user_id = runtime.state.get("user_id", "unknown")
+        
+        # Validate inputs
+        if not target or not isinstance(target, str) or len(target.strip()) == 0:
+            error_msg = "Invalid target provided"
+            safe_log_error(logger, error_msg, target=target, user_id=user_id)
+            return json.dumps({
+                "status": "error",
+                "message": error_msg,
+                "user_id": user_id
+            })
+        
+{% if has_api_key %}
+        # Get API key
+        api_key = api_key or _get_api_key(runtime)
+        if not api_key:
+            error_msg = "API key required but not provided"
+            safe_log_error(logger, error_msg, target=target, user_id=user_id)
+            return json.dumps({
+                "status": "error",
+                "message": error_msg,
+                "user_id": user_id,
+                "note": "API key can be provided via api_key parameter, runtime.state['api_keys'], or {{ api_key_name|upper }} environment variable"
+            })
+{% endif %}
+        
+        # MIGRATED IMPLEMENTATION - Direct execution, no Docker, no SpiderFoot dependencies
+        # Import implementation function dynamically
+        from hackerdogs_tools.osint.spiderfoot_modules._implementations import (
+            implement_{{ module_name }}
+        )
+        
+        # Build parameters for the implementation function
+        implementation_params = {
+            "target": target,
+{% if has_api_key %}
+            "api_key": api_key,
+{% endif %}
+{% for opt_name, opt_info in prepared_opts.items() %}
+{% if opt_name != "_maxthreads" and opt_name != "api_key" %}
+            "{{ opt_name }}": {{ opt_name }},
+{% endif %}
+{% endfor %}
+        }
+        
+        # Execute migrated implementation
+        implementation_result = implement_{{ module_name }}(**implementation_params)
+        
+        # Use implementation result
+        if implementation_result.get("status") == "error":
+            error_msg = implementation_result.get("message", "Unknown error")
+            safe_log_error(logger, error_msg, target=target, user_id=user_id)
+            return json.dumps({
+                "status": "error",
+                "message": error_msg,
+                "user_id": user_id
+            })
+        
+        result_data = implementation_result
+        
+        # Return verbatim output with consistent structure
+        result = {
+            "status": "success",
+            "module": "sfp_{{ module_name }}",
+            "module_name": "{{ meta.name }}",
+            "target": target,
+            "raw_response": result_data,
+            "user_id": user_id,
+            "note": "Raw output from {{ meta.name }} tool - migrated standalone implementation"
+        }
+        
+        safe_log_info(logger, f"[sfp_{{ module_name }}] Complete", target=target, user_id=user_id)
+        return json.dumps(result, indent=2)
+        
+    except Exception as e:
+        # Safely get variables for error handling
+        error_target = target if 'target' in locals() else kwargs.get("target", "unknown")
+        error_user_id = runtime.state.get("user_id", "unknown") if 'runtime' in locals() else "unknown"
+        safe_log_error(logger, f"[sfp_{{ module_name }}] Error: {str(e)}", target=error_target, user_id=error_user_id, exc_info=True)
+        return json.dumps({
+            "status": "error",
+            "message": f"{{ meta.name }} search failed: {str(e)}",
+            "user_id": error_user_id
+        })
+
