@@ -4753,38 +4753,9 @@ def implement_countryname(target: str, event_type: Optional[str] = None, cohoste
             "countries": []
         }
         
-        # Basic country code mapping (simplified - full list in SpiderFootHelpers)
-        country_codes = {
-            'US': 'United States', 'GB': 'United Kingdom', 'CA': 'Canada',
-            'AU': 'Australia', 'DE': 'Germany', 'FR': 'France', 'IT': 'Italy',
-            'ES': 'Spain', 'NL': 'Netherlands', 'BE': 'Belgium', 'CH': 'Switzerland',
-            'AT': 'Austria', 'SE': 'Sweden', 'NO': 'Norway', 'DK': 'Denmark',
-            'FI': 'Finland', 'PL': 'Poland', 'CZ': 'Czech Republic', 'IE': 'Ireland',
-            'PT': 'Portugal', 'GR': 'Greece', 'JP': 'Japan', 'CN': 'China',
-            'IN': 'India', 'BR': 'Brazil', 'MX': 'Mexico', 'AR': 'Argentina',
-            'ZA': 'South Africa', 'RU': 'Russia', 'KR': 'South Korea', 'SG': 'Singapore',
-            'MY': 'Malaysia', 'TH': 'Thailand', 'ID': 'Indonesia', 'PH': 'Philippines',
-            'VN': 'Vietnam', 'NZ': 'New Zealand', 'IL': 'Israel', 'AE': 'United Arab Emirates',
-            'SA': 'Saudi Arabia', 'TR': 'Turkey', 'EG': 'Egypt', 'NG': 'Nigeria',
-            'KE': 'Kenya', 'GH': 'Ghana', 'MA': 'Morocco', 'TN': 'Tunisia'
-        }
-        
-        # TLD to country mapping (simplified)
-        tld_countries = {
-            '.us': 'United States', '.uk': 'United Kingdom', '.ca': 'Canada',
-            '.au': 'Australia', '.de': 'Germany', '.fr': 'France', '.it': 'Italy',
-            '.es': 'Spain', '.nl': 'Netherlands', '.be': 'Belgium', '.ch': 'Switzerland',
-            '.at': 'Austria', '.se': 'Sweden', '.no': 'Norway', '.dk': 'Denmark',
-            '.fi': 'Finland', '.pl': 'Poland', '.cz': 'Czech Republic', '.ie': 'Ireland',
-            '.pt': 'Portugal', '.gr': 'Greece', '.jp': 'Japan', '.cn': 'China',
-            '.in': 'India', '.br': 'Brazil', '.mx': 'Mexico', '.ar': 'Argentina',
-            '.za': 'South Africa', '.ru': 'Russia', '.kr': 'South Korea', '.sg': 'Singapore',
-            '.my': 'Malaysia', '.th': 'Thailand', '.id': 'Indonesia', '.ph': 'Philippines',
-            '.vn': 'Vietnam', '.nz': 'New Zealand', '.il': 'Israel', '.ae': 'United Arab Emirates',
-            '.sa': 'Saudi Arabia', '.tr': 'Turkey', '.eg': 'Egypt', '.ng': 'Nigeria',
-            '.ke': 'Kenya', '.gh': 'Ghana', '.ma': 'Morocco', '.tn': 'Tunisia'
-        }
-        
+        # Use SpiderFootHelpers for country codes
+        from hackerdogs_tools.osint.spiderfoot_helpers import SpiderFootHelpers
+        country_codes = SpiderFootHelpers.countryCodes()
         # Auto-detect event type if not provided
         if event_type is None:
             # Try to detect based on target format
@@ -4816,25 +4787,29 @@ def implement_countryname(target: str, event_type: Optional[str] = None, cohoste
             try:
                 phone_number = phonenumbers.parse(target)
                 country_code = region_code_for_country_code(phone_number.country_code)
-                if country_code and country_code.upper() in country_codes:
-                    countries.append(country_codes[country_code.upper()])
+                if country_code:
+                    country_name = SpiderFootHelpers.countryNameFromCountryCode(country_code)
+                    if country_name:
+                        countries.append(country_name)
             except Exception:
                 pass
         
         elif event_type in ["DOMAIN_NAME", "AFFILIATE_DOMAIN_NAME", "CO_HOSTED_SITE_DOMAIN", "SIMILARDOMAIN"]:
-            # Extract TLD
+            # Extract TLD and use SpiderFootHelpers
             domain_parts = target.split(".")
             if len(domain_parts) > 1:
-                tld = "." + domain_parts[-1].lower()
-                if tld in tld_countries:
-                    countries.append(tld_countries[tld])
+                tld = domain_parts[-1].lower()
+                country_name = SpiderFootHelpers.countryNameFromTld(tld)
+                if country_name:
+                    countries.append(country_name)
         
         elif event_type == "IBAN_NUMBER":
             # IBAN starts with 2-letter country code
             if len(target) >= 2:
                 country_code = target[0:2].upper()
-                if country_code in country_codes:
-                    countries.append(country_codes[country_code])
+                country_name = SpiderFootHelpers.countryNameFromCountryCode(country_code)
+                if country_name:
+                    countries.append(country_name)
         
         elif event_type in ["DOMAIN_WHOIS", "GEOINFO", "PHYSICAL_ADDRESS", "AFFILIATE_DOMAIN_WHOIS", "CO_HOSTED_SITE_DOMAIN_WHOIS"]:
             # Look for country names in text
@@ -4849,8 +4824,11 @@ def implement_countryname(target: str, event_type: Optional[str] = None, cohoste
             matches = re.findall(r"country:\s*(.+?)(?:\s|$|,|;)", target, re.IGNORECASE)
             for m in matches:
                 m = m.strip()
-                if m.upper() in country_codes:
-                    countries.append(country_codes[m.upper()])
+                # Try country code first
+                country_name = SpiderFootHelpers.countryNameFromCountryCode(m)
+                if country_name:
+                    countries.append(country_name)
+                # If not found, check if it's already a country name
                 elif m in country_codes.values():
                     countries.append(m)
         
@@ -5466,6 +5444,565 @@ def implement_dns_for_family(target: str) -> Dict[str, Any]:
         return {
             "status": "error",
             "message": f"DNS for Family check failed: {str(e)}"
+        }
+
+
+def implement_focsec(target: str, api_key: str = "") -> Dict[str, Any]:
+    """
+    Focsec implementation - migrated from SpiderFoot sfp_focsec.
+    
+    Logic migrated from: spiderfoot/modules/sfp_focsec.py
+    - Look up IP address information from Focsec API
+    - Requires API key
+    """
+    try:
+        if not api_key:
+            return {
+                "status": "error",
+                "message": "Focsec API key is required"
+            }
+        
+        results = {
+            "ip": target,
+            "is_bot": False,
+            "is_tor": False,
+            "is_vpn": False,
+            "is_proxy": False
+        }
+        
+        params = urllib.parse.urlencode({
+            'api_key': api_key,
+        })
+        
+        url = f"https://api.focsec.com/v1/ip/{target}?{params}"
+        
+        try:
+            response = requests.get(url, timeout=30, headers={'User-Agent': 'SpiderFoot'})
+            
+            if response.status_code == 400:
+                return {
+                    "status": "error",
+                    "message": "Bad request"
+                }
+            
+            if response.status_code == 401:
+                return {
+                    "status": "error",
+                    "message": "Unauthorized - Invalid API key"
+                }
+            
+            if response.status_code == 402:
+                return {
+                    "status": "error",
+                    "message": "Unauthorized - Payment Required. Subscription or trial period expired"
+                }
+            
+            if response.status_code == 404:
+                return {
+                    "status": "success",
+                    "data": results  # No results found
+                }
+            
+            if response.status_code == 429:
+                return {
+                    "status": "error",
+                    "message": "You are being rate-limited by Focsec"
+                }
+            
+            if response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Unexpected HTTP response code {response.status_code} from Focsec"
+                }
+            
+            if not response.text:
+                return {
+                    "status": "success",
+                    "data": results  # No results
+                }
+            
+            data = response.json()
+            
+            # Extract information
+            results["is_bot"] = data.get('is_bot', False)
+            results["is_tor"] = data.get('is_tor', False)
+            results["is_vpn"] = data.get('is_vpn', False)
+            results["is_proxy"] = data.get('is_proxy', False)
+            results["city"] = data.get('city')
+            results["country"] = data.get('country')
+            results["raw_data"] = data
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Focsec API request failed: {str(e)}"
+            }
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Focsec lookup failed: {str(e)}"
+        }
+
+
+def implement_fortinet(target: str, checkaffiliates: bool = True) -> Dict[str, Any]:
+    """
+    Fortinet implementation - migrated from SpiderFoot sfp_fortinet.
+    
+    Logic migrated from: spiderfoot/modules/sfp_fortinet.py
+    - Check if an IP address is malicious according to FortiGuard Antispam
+    - No API key required
+    """
+    try:
+        results = {
+            "listed": False,
+            "ip": target
+        }
+        
+        url = f"https://www.fortiguard.com/search?q={target}&engine=8"
+        
+        try:
+            response = requests.get(url, timeout=30, headers={'User-Agent': 'SpiderFoot'})
+            
+            if response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Unexpected HTTP response code {response.status_code} from FortiGuard Antispam"
+                }
+            
+            if not response.text:
+                return {
+                    "status": "error",
+                    "message": "Received no content from FortiGuard Antispam"
+                }
+            
+            content = response.text
+            
+            # Check if IP is on blocklist
+            if "Your signature is on the blocklist" in content:
+                results["listed"] = True
+                results["url"] = url
+        
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"FortiGuard Antispam check failed: {str(e)}"
+            }
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Fortinet check failed: {str(e)}"
+        }
+
+
+def implement_fraudguard(target: str, fraudguard_api_key_account: str = "", fraudguard_api_key_password: str = "", age_limit_days: int = 90) -> Dict[str, Any]:
+    """
+    Fraudguard implementation - migrated from SpiderFoot sfp_fraudguard.
+    
+    Logic migrated from: spiderfoot/modules/sfp_fraudguard.py
+    - Obtain threat information from Fraudguard.io API
+    - Requires API username and password
+    """
+    try:
+        if not fraudguard_api_key_account or not fraudguard_api_key_password:
+            return {
+                "status": "error",
+                "message": "Fraudguard API username and password are required"
+            }
+        
+        results = {
+            "ip": target,
+            "threat": None,
+            "risk_level": None,
+            "geoinfo": {}
+        }
+        
+        url = f"https://api.fraudguard.io/ip/{target}"
+        
+        # Create Basic Auth token
+        api_key_account = fraudguard_api_key_account.encode('utf-8') if isinstance(fraudguard_api_key_account, str) else fraudguard_api_key_account
+        api_key_password = fraudguard_api_key_password.encode('utf-8') if isinstance(fraudguard_api_key_password, str) else fraudguard_api_key_password
+        token = base64.b64encode(api_key_account + ':'.encode('utf-8') + api_key_password)
+        headers = {
+            'Authorization': "Basic " + token.decode('utf-8'),
+            'User-Agent': 'SpiderFoot'
+        }
+        
+        try:
+            response = requests.get(url, timeout=30, headers=headers)
+            
+            if response.status_code in [400, 429, 500, 403]:
+                return {
+                    "status": "error",
+                    "message": "Fraudguard.io API key seems to have been rejected or you have exceeded usage limits for the month"
+                }
+            
+            if not response.text:
+                return {
+                    "status": "success",
+                    "data": results  # No info found
+                }
+            
+            data = response.json()
+            
+            # Check age limit
+            if age_limit_days > 0 and data.get('discover_date'):
+                try:
+                    created_dt = datetime.strptime(data.get('discover_date'), '%Y-%m-%d %H:%M:%S')
+                    created_ts = int(time.mktime(created_dt.timetuple()))
+                    age_limit_ts = int(time.time()) - (86400 * age_limit_days)
+                    if created_ts < age_limit_ts:
+                        return {
+                            "status": "success",
+                            "data": results  # Record too old
+                        }
+                except Exception:
+                    pass  # Continue if date parsing fails
+            
+            # Extract information
+            results["threat"] = data.get('threat')
+            results["risk_level"] = data.get('risk_level')
+            results["geoinfo"] = {
+                "state": data.get('state'),
+                "city": data.get('city'),
+                "postal_code": data.get('postal_code'),
+                "country": data.get('country')
+            }
+            results["raw_data"] = data
+        
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Fraudguard.io API request failed: {str(e)}"
+            }
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Fraudguard lookup failed: {str(e)}"
+        }
+
+
+def implement_fsecure_riddler(target: str, username: str = "", password: str = "", verify: bool = True) -> Dict[str, Any]:
+    """
+    F-Secure Riddler implementation - migrated from SpiderFoot sfp_fsecure_riddler.
+    
+    Logic migrated from: spiderfoot/modules/sfp_fsecure_riddler.py
+    - Obtain network information from F-Secure Riddler.io API
+    - Requires username and password (login required)
+    """
+    try:
+        if not username or not password:
+            return {
+                "status": "error",
+                "message": "F-Secure Riddler.io username and password are required"
+            }
+        
+        results = {
+            "target": target,
+            "hosts": [],
+            "addresses": [],
+            "coordinates": []
+        }
+        
+        # Login to get authentication token
+        login_params = {
+            'email': username.encode('raw_unicode_escape').decode("ascii"),
+            'password': password.encode('raw_unicode_escape').decode("ascii")
+        }
+        login_headers = {
+            'Content-Type': 'application/json',
+        }
+        
+        try:
+            login_response = requests.post(
+                'https://riddler.io/auth/login',
+                json=login_params,
+                headers=login_headers,
+                timeout=30
+            )
+            
+            if not login_response.text:
+                return {
+                    "status": "error",
+                    "message": "Login failed - no response"
+                }
+            
+            login_data = login_response.json()
+            token = login_data.get('response', {}).get('user', {}).get('authentication_token')
+            
+            if not token:
+                return {
+                    "status": "error",
+                    "message": "Login failed - invalid credentials"
+                }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Login failed: {str(e)}"
+            }
+        
+        # Determine query type based on target
+        if '.' in target and not target.replace('.', '').replace(':', '').isdigit():
+            # Domain name
+            query = f"pld:{target}"
+        elif ':' in target or (target.replace('.', '').isdigit() and target.count('.') == 3):
+            # IP address
+            query = f"ip:{target}"
+        else:
+            query = f"pld:{target}"
+        
+        # Query Riddler API
+        query_params = {
+            'query': query.encode('raw_unicode_escape').decode("ascii", errors='replace')
+        }
+        query_headers = {
+            'Authentication-Token': token,
+            'Content-Type': 'application/json',
+        }
+        
+        try:
+            query_response = requests.post(
+                'https://riddler.io/api/search',
+                json=query_params,
+                headers=query_headers,
+                timeout=30
+            )
+            
+            time.sleep(1)  # Rate limiting
+            
+            if query_response.status_code in [400, 401, 402, 403, 500]:
+                return {
+                    "status": "error",
+                    "message": f"Unexpected HTTP response code {query_response.status_code} from F-Secure Riddler"
+                }
+            
+            if not query_response.text:
+                return {
+                    "status": "success",
+                    "data": results  # No results
+                }
+            
+            data = query_response.json()
+            
+            if not data:
+                return {
+                    "status": "success",
+                    "data": results  # No results
+                }
+            
+            # Extract hosts, addresses, and coordinates
+            for result in data:
+                host = result.get('host')
+                if host:
+                    results["hosts"].append(host)
+                
+                addr = result.get('addr')
+                if addr:
+                    results["addresses"].append(addr)
+                
+                coord = result.get('cordinates')
+                if coord and len(coord) == 2:
+                    results["coordinates"].append(f"{coord[0]}, {coord[1]}")
+            
+            results["raw_data"] = data
+        
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Riddler API query failed: {str(e)}"
+            }
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"F-Secure Riddler lookup failed: {str(e)}"
+        }
+
+
+def implement_fullcontact(target: str, api_key: str = "", max_age_days: int = 365, target_type: str = "auto") -> Dict[str, Any]:
+    """
+    FullContact implementation - migrated from SpiderFoot sfp_fullcontact.
+    
+    Logic migrated from: spiderfoot/modules/sfp_fullcontact.py
+    - Gather domain and e-mail information from FullContact.com API
+    - Requires API key
+    - target_type: "domain", "email", or "auto" (auto-detect)
+    """
+    try:
+        if not api_key:
+            return {
+                "status": "error",
+                "message": "FullContact API key is required"
+            }
+        
+        results = {
+            "target": target,
+            "emails": [],
+            "phones": [],
+            "locations": [],
+            "addresses": [],
+            "key_people": []
+        }
+        
+        # Auto-detect target type
+        if target_type == "auto":
+            if '@' in target:
+                target_type = "email"
+            elif '.' in target and not target.replace('.', '').isdigit():
+                target_type = "domain"
+            else:
+                target_type = "domain"
+        
+        headers = {
+            'Authorization': f"Bearer {api_key}",
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            if target_type == "email":
+                # Query person by email
+                url = "https://api.fullcontact.com/v3/person.enrich"
+                data = {'email': target}
+            else:
+                # Query company by domain
+                url = "https://api.fullcontact.com/v3/company.enrich"
+                data = {'domain': target}
+            
+            response = requests.post(
+                url,
+                json=data,
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code in [401, 400]:
+                return {
+                    "status": "error",
+                    "message": "API key rejected by FullContact"
+                }
+            
+            if response.status_code == 403:
+                # Throttled - retry up to 3 times
+                for retry in range(3):
+                    time.sleep(2)
+                    response = requests.post(
+                        url,
+                        json=data,
+                        headers=headers,
+                        timeout=30
+                    )
+                    if response.status_code != 403:
+                        break
+                
+                if response.status_code == 403:
+                    return {
+                        "status": "error",
+                        "message": "Throttled or other blocking by FullContact"
+                    }
+            
+            if not response.text:
+                return {
+                    "status": "error",
+                    "message": "No content returned from FullContact"
+                }
+            
+            ret = response.json()
+            
+            # Check age limit
+            if "updated" in ret and max_age_days > 0:
+                try:
+                    last_dt = datetime.strptime(ret['updated'], '%Y-%m-%d')
+                    last_ts = int(time.mktime(last_dt.timetuple()))
+                    age_limit_ts = int(time.time()) - (86400 * max_age_days)
+                    if last_ts < age_limit_ts:
+                        return {
+                            "status": "success",
+                            "data": results  # Record too old
+                        }
+                except Exception:
+                    pass  # Continue if date parsing fails
+            
+            # Extract data based on type
+            if target_type == "email":
+                # Person data
+                full_name = ret.get('fullName')
+                if full_name:
+                    results["full_name"] = full_name
+            else:
+                # Company data
+                if ret.get("details"):
+                    ret = ret['details']
+                
+                # Extract emails
+                if ret.get("emails"):
+                    for r in ret['emails']:
+                        email = r.get('value')
+                        if email:
+                            results["emails"].append(email)
+                
+                # Extract phones
+                if ret.get("phones"):
+                    for r in ret['phones']:
+                        phone = r.get('value')
+                        if phone:
+                            results["phones"].append(phone)
+                
+                # Extract locations
+                if ret.get("locations"):
+                    for r in ret['locations']:
+                        location = ', '.join([_f for _f in [r.get('city'), r.get('country')] if _f])
+                        if location:
+                            results["locations"].append(location)
+                        
+                        if r.get("formatted") and len(r['formatted']) > 10:
+                            results["addresses"].append(r['formatted'])
+                
+                # Extract key people
+                if ret.get("keyPeople"):
+                    for r in ret['keyPeople']:
+                        full_name = r.get('fullName')
+                        if full_name:
+                            results["key_people"].append(full_name)
+            
+            results["raw_data"] = ret
+        
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"FullContact API request failed: {str(e)}"
+            }
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"FullContact lookup failed: {str(e)}"
         }
 
 
