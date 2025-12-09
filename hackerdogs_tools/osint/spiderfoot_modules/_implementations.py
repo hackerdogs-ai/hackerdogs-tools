@@ -4870,6 +4870,670 @@ def implement_countryname(target: str, event_type: Optional[str] = None, cohoste
         }
 
 
+def implement_creditcard(target: str) -> Dict[str, Any]:
+    """
+    Credit Card Number Extractor implementation - migrated from SpiderFoot sfp_creditcard.
+    
+    Logic migrated from: spiderfoot/modules/sfp_creditcard.py
+    - Extracts credit card numbers from text using Luhn algorithm validation
+    """
+    try:
+        import re
+        
+        results = {
+            "credit_cards": []
+        }
+        
+        # Remove whitespace from data (credit cards might contain spaces)
+        data = target.replace(" ", "").replace("-", "")
+        
+        # Extract all numbers with lengths ranging from 13 - 19 digits
+        matches = re.findall(r"[0-9]{13,19}", data)
+        
+        # Luhn algorithm for validation (matching SpiderFoot implementation exactly)
+        found_cards = set()
+        for match in matches:
+            # Skip if all zeros
+            if int(match) == 0:
+                continue
+            
+            # Luhn algorithm (matching SpiderFoot's implementation)
+            cc_number_total = 0
+            is_second_digit = False
+            
+            for digit in match[::-1]:  # Process from right to left
+                d = int(digit)
+                if is_second_digit:
+                    d *= 2
+                cc_number_total += int(d / 10)  # Add tens digit
+                cc_number_total += d % 10       # Add ones digit
+                is_second_digit = not is_second_digit
+            
+            if cc_number_total % 10 == 0:
+                if match not in found_cards:
+                    found_cards.add(match)
+                    results["credit_cards"].append(match)
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Credit card extraction failed: {str(e)}"
+        }
+
+
+def implement_crossref(target: str, checkbase: bool = True, timeout: int = 30) -> Dict[str, Any]:
+    """
+    Cross-Referencer implementation - migrated from SpiderFoot sfp_crossref.
+    
+    Logic migrated from: spiderfoot/modules/sfp_crossref.py
+    - Checks if external URLs link back to the target domain (affiliate detection)
+    - Note: This is a simplified version that checks if the URL contains references to itself
+    """
+    try:
+        import re
+        import requests
+        from urllib.parse import urlparse
+        
+        results = {
+            "affiliates": []
+        }
+        
+        # Normalize target URL
+        if not target.startswith(('http://', 'https://')):
+            if '.' in target:
+                target = 'http://' + target.lower()
+            else:
+                return {
+                    "status": "error",
+                    "message": "Invalid target URL"
+                }
+        
+        parsed = urlparse(target)
+        target_fqdn = parsed.netloc or parsed.path.split('/')[0]
+        
+        # Extract target domain names (without TLD variations)
+        target_names = [target_fqdn]
+        if '.' in target_fqdn:
+            target_names.append(target_fqdn.split('.')[0])
+        
+        # Fetch the external URL
+        try:
+            response = requests.get(
+                target,
+                timeout=timeout,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
+                verify=False,
+                allow_redirects=True
+            )
+            if response.status_code != 200:
+                return {
+                    "status": "success",
+                    "data": results  # No affiliates found
+                }
+            content = response.text
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to fetch URL: {str(e)}"
+            }
+        
+        # Check if any target name appears in content
+        matched = False
+        for name in target_names:
+            # Search for mentions with word boundaries
+            pattern = r"([\.\'\/\"\ ]" + re.escape(name) + r"[\.\'\/\"\ ])"
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            if len(matches) > 0:
+                matched = True
+                break
+        
+        # If not matched and checkbase is enabled, check base URL
+        if not matched and checkbase:
+            base_url = f"{parsed.scheme}://{target_fqdn}/"
+            try:
+                base_response = requests.get(
+                    base_url,
+                    timeout=timeout,
+                    headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'},
+                    verify=False,
+                    allow_redirects=True
+                )
+                if base_response.status_code == 200:
+                    base_content = base_response.text
+                    for name in target_names:
+                        pattern = r"([\.\'\/\"\ ]" + re.escape(name) + r"[\'\/\"\ ])"
+                        matches = re.findall(pattern, base_content, re.IGNORECASE)
+                        if len(matches) > 0:
+                            matched = True
+                            break
+            except Exception:
+                pass
+        
+        if matched:
+            results["affiliates"].append({
+                "url": target,
+                "fqdn": target_fqdn,
+                "matched": True
+            })
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Cross-reference check failed: {str(e)}"
+        }
+
+
+def implement_crxcavator(target: str, verify: bool = True) -> Dict[str, Any]:
+    """
+    CRXcavator implementation - migrated from SpiderFoot sfp_crxcavator.
+    
+    Logic migrated from: spiderfoot/modules/sfp_crxcavator.py
+    - Queries CRXcavator API for Chrome extensions related to a domain
+    """
+    try:
+        import json
+        import time
+        import requests
+        from urllib.parse import urlencode, urlparse
+        
+        results = {
+            "extensions": [],
+            "urls": [],
+            "hosts": [],
+            "addresses": []
+        }
+        
+        # Extract domain keyword (remove TLD)
+        domain_parts = target.split('.')
+        if len(domain_parts) > 1:
+            domain_keyword = domain_parts[0]
+        else:
+            domain_keyword = target
+        
+        # Query CRXcavator search API
+        params = urlencode({
+            'q': domain_keyword
+        })
+        
+        try:
+            response = requests.get(
+                f"https://api.crxcavator.io/v1/search?{params}",
+                headers={'User-Agent': 'Mozilla/5.0'},
+                timeout=30
+            )
+            time.sleep(1)  # Rate limiting
+            
+            if response.status_code != 200:
+                return {
+                    "status": "success",
+                    "data": results  # No results
+                }
+            
+            search_results = response.json()
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"CRXcavator search failed: {str(e)}"
+            }
+        
+        if not search_results:
+            return {
+                "status": "success",
+                "data": results
+            }
+        
+        # Process each extension
+        for result in search_results:
+            if not isinstance(result, dict):
+                continue
+            
+            extension_id = result.get('extension_id')
+            if not extension_id or '@' in extension_id:
+                continue
+            
+            # Query extension details
+            try:
+                ext_response = requests.get(
+                    f"https://api.crxcavator.io/v1/report/{extension_id}",
+                    headers={'User-Agent': 'Mozilla/5.0'},
+                    timeout=30
+                )
+                time.sleep(1)  # Rate limiting
+                
+                if ext_response.status_code != 200:
+                    continue
+                
+                extensions = ext_response.json()
+            except Exception:
+                continue
+            
+            if not extensions:
+                continue
+            
+            for extension in extensions:
+                data = extension.get('data', {})
+                manifest = data.get('manifest', {})
+                webstore = data.get('webstore', {})
+                
+                if not manifest or not webstore:
+                    continue
+                
+                name = webstore.get('name')
+                version = manifest.get('version')
+                
+                if not name or not version:
+                    continue
+                
+                # Extract URLs
+                privacy_policy = webstore.get('privacy_policy')
+                support_site = webstore.get('support_site')
+                website = webstore.get('website')
+                offered_by = webstore.get('offered_by')
+                
+                extension_info = {
+                    "name": name,
+                    "version": version,
+                    "extension_id": extension_id,
+                    "webstore_url": f"https://chrome.google.com/webstore/detail/{extension_id}"
+                }
+                
+                if privacy_policy:
+                    extension_info["privacy_policy"] = privacy_policy
+                    results["urls"].append(privacy_policy)
+                
+                if support_site:
+                    extension_info["support_site"] = support_site
+                    results["urls"].append(support_site)
+                
+                if website:
+                    extension_info["website"] = website
+                    results["urls"].append(website)
+                
+                if offered_by:
+                    extension_info["offered_by"] = offered_by
+                    results["urls"].append(offered_by)
+                
+                address = webstore.get('address')
+                if address and len(address) > 10:
+                    extension_info["address"] = address
+                    results["addresses"].append(address)
+                
+                results["extensions"].append(extension_info)
+                
+                # Extract hosts from URLs
+                for url in [privacy_policy, support_site, website, offered_by]:
+                    if url:
+                        try:
+                            parsed = urlparse(url)
+                            host = parsed.netloc
+                            if host:
+                                results["hosts"].append(host)
+                        except Exception:
+                            pass
+        
+        # Remove duplicates
+        results["urls"] = list(set(results["urls"]))
+        results["hosts"] = list(set(results["hosts"]))
+        results["addresses"] = list(set(results["addresses"]))
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"CRXcavator query failed: {str(e)}"
+        }
+
+
+def implement_customfeed(target: str, url: str = "", target_type: Optional[str] = None, cacheperiod: int = 0) -> Dict[str, Any]:
+    """
+    Custom Threat Feed implementation - migrated from SpiderFoot sfp_customfeed.
+    
+    Logic migrated from: spiderfoot/modules/sfp_customfeed.py
+    - Checks if target is listed in a custom threat feed URL
+    """
+    try:
+        import re
+        import requests
+        from netaddr import IPAddress, IPNetwork
+        
+        results = {
+            "listed": False,
+            "feed_url": url
+        }
+        
+        if not url:
+            return {
+                "status": "error",
+                "message": "Feed URL is required"
+            }
+        
+        # Auto-detect target_type if not provided
+        if target_type is None:
+            # Check if it's an IP address
+            ip_pattern = re.compile(r'^(\d{1,3}\.){3}\d{1,3}(/\d{1,2})?$')
+            if ip_pattern.match(target):
+                if '/' in target:
+                    target_type = "netblock"
+                else:
+                    target_type = "ip"
+            # Check if it's an ASN
+            elif target.upper().startswith('AS') or re.match(r'^\d+$', target):
+                target_type = "asn"
+            # Default to domain
+            else:
+                target_type = "domain"
+        
+        # Fetch feed
+        try:
+            response = requests.get(
+                url,
+                timeout=30,
+                headers={'User-Agent': 'Mozilla/5.0'},
+                verify=False
+            )
+            if response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Failed to fetch feed: HTTP {response.status_code}"
+                }
+            feed_content = response.text
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to fetch feed: {str(e)}"
+            }
+        
+        # Process based on target type
+        if target_type == "netblock":
+            # Extract IPs from feed and check if any are in the netblock
+            ip_pattern = re.compile(r"(\d+\.\d+\.\d+\.\d+)")
+            feed_ips = ip_pattern.findall(feed_content)
+            
+            try:
+                target_network = IPNetwork(target)
+                for ip_str in feed_ips:
+                    try:
+                        if IPAddress(ip_str) in target_network:
+                            results["listed"] = True
+                            results["matched_ip"] = ip_str
+                            break
+                    except Exception:
+                        continue
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": f"Invalid netblock format: {str(e)}"
+                }
+        
+        elif target_type in ["domain", "ip"]:
+            # Exact match or regex match
+            for line in feed_content.split('\n'):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                
+                # Remove port if present
+                line_clean = line.split('/')[0].split(':')[0]
+                
+                if line_clean == target or line == target:
+                    results["listed"] = True
+                    results["matched_line"] = line
+                    break
+        
+        elif target_type == "asn":
+            # ASN matching
+            asn_pattern = re.compile(r'AS(\d+)', re.IGNORECASE)
+            target_asn = asn_pattern.search(target)
+            if target_asn:
+                target_asn_num = target_asn.group(1)
+                for line in feed_content.split('\n'):
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    if target_asn_num in line or f"AS{target_asn_num}" in line.upper():
+                        results["listed"] = True
+                        results["matched_line"] = line
+                        break
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Custom feed check failed: {str(e)}"
+        }
+
+
+def implement_debounce(target: str) -> Dict[str, Any]:
+    """
+    Debounce implementation - migrated from SpiderFoot sfp_debounce.
+    
+    Logic migrated from: spiderfoot/modules/sfp_debounce.py
+    - Checks if an email is disposable using Debounce free API (no API key required)
+    """
+    try:
+        import json
+        import requests
+        
+        results = {
+            "disposable": False,
+            "email": target
+        }
+        
+        # Debounce free disposable email check API (no API key required)
+        url = f"https://disposable.debounce.io?email={target}"
+        
+        try:
+            response = requests.get(
+                url,
+                timeout=30,
+                headers={'User-Agent': 'SpiderFoot'}
+            )
+            
+            if response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Debounce API error: HTTP {response.status_code}"
+                }
+            
+            if not response.text:
+                return {
+                    "status": "success",
+                    "data": results  # No info found
+                }
+            
+            data = response.json()
+            
+            # Check if email is disposable
+            is_disposable = data.get('disposable')
+            if is_disposable == "true":
+                results["disposable"] = True
+                results["raw_data"] = data
+        except json.JSONDecodeError as e:
+            return {
+                "status": "error",
+                "message": f"Error processing JSON response from Debounce: {str(e)}"
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Debounce API request failed: {str(e)}"
+            }
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Debounce validation failed: {str(e)}"
+        }
+
+
+def implement_dns_for_family(target: str) -> Dict[str, Any]:
+    """
+    DNS for Family implementation - migrated from SpiderFoot sfp_dns_for_family.
+    
+    Logic migrated from: spiderfoot/modules/sfp_dns_for_family.py
+    - Checks if hosts are blocked by DNS for Family DNS filters
+    """
+    try:
+        if not DNS_RESOLVER_AVAILABLE:
+            return {
+                "status": "error",
+                "message": "DNS resolver (dnspython) not available"
+            }
+        
+        results = {
+            "blocked": False,
+            "host": target
+        }
+        
+        # DNS for Family DNS servers (from original SpiderFoot module)
+        dns_servers = ["94.130.180.225", "78.47.64.161"]
+        
+        # Blocked domains resolve to this IP
+        blocked_ip = "159.69.10.249"
+        
+        for dns_server in dns_servers:
+            try:
+                # Create resolver with DNS for Family server
+                resolver = dns.resolver.Resolver()
+                resolver.nameservers = [dns_server]
+                resolver.timeout = 5
+                resolver.lifetime = 5
+                
+                # Try to resolve
+                answers = resolver.resolve(target, 'A')
+                
+                # Check if resolved to blocked IP
+                for result in answers:
+                    resolved_ip = str(result)
+                    if resolved_ip == blocked_ip:
+                        results["blocked"] = True
+                        results["resolved_ip"] = resolved_ip
+                        return {
+                            "status": "success",
+                            "data": results
+                        }
+                    else:
+                        # Resolved to different IP - not blocked
+                        results["blocked"] = False
+                        results["resolved"] = True
+                        results["ip_addresses"] = [str(rdata) for rdata in answers]
+                        return {
+                            "status": "success",
+                            "data": results
+                        }
+            except dns.resolver.NXDOMAIN:
+                # Domain doesn't exist - not blocked (would return blocked IP if blocked)
+                results["blocked"] = False
+                results["resolved"] = False
+                continue
+            except Exception:
+                # Other error - try next server
+                continue
+        
+        # If we get here, couldn't resolve through DNS for Family servers
+        results["blocked"] = False
+        results["resolved"] = False
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"DNS for Family check failed: {str(e)}"
+        }
+
+
+def implement_cybercrimetracker(target: str, checkaffiliates: bool = True, checkcohosts: bool = True, cacheperiod: int = 18) -> Dict[str, Any]:
+    """
+    CyberCrime-Tracker.net implementation - migrated from SpiderFoot sfp_cybercrimetracker.
+    
+    Logic migrated from: spiderfoot/modules/sfp_cybercrimetracker.py
+    - Checks if target is listed in CyberCrime-Tracker.net blacklist
+    """
+    try:
+        import requests
+        
+        results = {
+            "listed": False,
+            "blacklist_url": "https://cybercrime-tracker.net/all.php"
+        }
+        
+        # Fetch blacklist
+        try:
+            response = requests.get(
+                "https://cybercrime-tracker.net/all.php",
+                timeout=10,
+                headers={'User-Agent': 'Mozilla/5.0'},
+                verify=False
+            )
+            if response.status_code != 200:
+                return {
+                    "status": "error",
+                    "message": f"Failed to fetch blacklist: HTTP {response.status_code}"
+                }
+            blacklist_content = response.text
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Failed to fetch blacklist: {str(e)}"
+            }
+        
+        # Parse blacklist
+        blacklisted_hosts = []
+        for line in blacklist_content.split('\n'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            
+            # Extract host (before / and :)
+            host = line.split('/')[0].split(':')[0]
+            if host and '.' in host:
+                blacklisted_hosts.append(host.lower())
+        
+        # Check if target is in blacklist
+        target_lower = target.lower()
+        if target_lower in blacklisted_hosts:
+            results["listed"] = True
+            results["search_url"] = f"https://cybercrime-tracker.net/index.php?search={target}"
+        
+        return {
+            "status": "success",
+            "data": results
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"CyberCrime-Tracker check failed: {str(e)}"
+        }
+
+
 def implement_dnszonexfer(target: str) -> Dict[str, Any]:
     """
     DNS Zone Transfer implementation - migrated from SpiderFoot sfp_dnszonexfer.
