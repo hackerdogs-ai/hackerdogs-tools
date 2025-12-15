@@ -4,16 +4,16 @@
 			"path": "."
 		},
 		{
-			"path": "../crewai"
-		},
-		{
-			"path": "../langchain-community"
-		},
-		{
 			"path": "../blackbook"
 		},
 		{
 			"path": "../malicious-domains"
+		},
+		{
+			"path": "../malicious-ip"
+		},
+		{
+			"path": "../spiderfoot"
 		}
 	],
 	"settings": {}
